@@ -26,8 +26,10 @@ jobs:
           ./gradlew BroStreamFreshByFaz2:make makePluginsJson
           mkdir public
           cp EpornerGay/build/*.cs3 public/
-          cp build/plugins.json public/
-          cp repo.json public/
+          cp EpornerGay/build/BroStreamFreshByFaz2.cs3 public/BroStreamFreshByFaz2-v4.cs3
+          jq 'map(.url = "https://raw.githubusercontent.com/efczpaclasses-boop/brostream-by-faz-2/builds/BroStreamFreshByFaz2-v4.cs3")' build/plugins.json > public/plugins-v4.json
+          cp repo.json public/repo.json
+          cp repo.json public/repo-v4.json
       - name: Publish builds branch
         uses: peaceiris/actions-gh-pages@v4
         with:
