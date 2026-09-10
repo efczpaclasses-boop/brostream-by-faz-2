@@ -58,7 +58,7 @@ class EpornerGayProvider : MainAPI() {
         "GPT|/search/videos/pnp-slam/page1.html" to "🔥 PNP & Slam",
         "MP|/categories/muscle/" to "💪 Muscle Men",
         "GV|/search/gay-jock/" to "🔥 Jocks",
-        "MP|/search/?q=straight+curious+guys" to "Straight & Curious Guys",
+        "GV|/search/straight-curious-guys/" to "Straight & Curious Guys",
         "GV|/categories/big-cock/" to "Big Dick",
         "MP|/categories/bareback/" to "Bareback",
         "GV|/categories/group-sex/" to "Group & Orgies",
@@ -85,7 +85,7 @@ class EpornerGayProvider : MainAPI() {
         "GV|/categories/compilation/" to "gay compilation", "MP|/categories/compilation/" to "cum compilation",
         "GV|/categories/party/" to "gay party", "GPT|/search/videos/pnp-slam/page1.html" to "pnp slam",
         "MP|/categories/muscle/" to "muscle men", "GV|/search/gay-jock/" to "gay jock",
-        "MP|/search/?q=straight+curious+guys" to "straight curious guys", "GV|/categories/big-cock/" to "big cock men",
+        "GV|/search/straight-curious-guys/" to "straight curious gay men", "GV|/categories/big-cock/" to "big cock men",
         "MP|/categories/bareback/" to "gay bareback", "GV|/categories/group-sex/" to "gay group",
         "MP|/categories/solo/" to "solo male", "GV|/categories/outdoor/" to "gay outdoor",
         "MP|/categories/cumshot/" to "gay cumshot", "GV|/categories/gloryhole/" to "gay gloryhole",
@@ -250,6 +250,7 @@ class EpornerGayProvider : MainAPI() {
             "MP|/search/?q=amateur+gay+blowjob" -> oral && Regex("\\b(amateur|homemade|home made|real|selfmade)\\b").containsMatchIn(title)
             "GPT|/search/videos/straight-guy-blowjob/page1.html" -> oral && Regex("\\b(straight|curious|bestie|friend|buddy)\\b").containsMatchIn(title)
             "GV|/search/straight-friends-gay/" -> Regex("\\b(straight|curious)\\b").containsMatchIn(title) && Regex("\\b(friend|friends|bestie|buddy|buddies)\\b").containsMatchIn(title)
+            "GV|/search/straight-curious-guys/" -> Regex("\\b(straight|curious|experiment)\\b").containsMatchIn(title) && Regex("\\b(guy|guys|man|men|male|boy|friend|buddy)\\b").containsMatchIn(title)
             "MP|/search/?q=gay+first+time" -> Regex("\\b(first time|first-time|virgin|first experience|first contact|experiment)\\b").containsMatchIn(title)
             "GV|/search/gay-onlyfans/" -> Regex("\\b(onlyfans|only fans|creator|fan site|webcam|subscriber)\\b").containsMatchIn(title)
             else -> true
