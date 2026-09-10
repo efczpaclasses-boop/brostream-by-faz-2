@@ -36,7 +36,7 @@ subprojects {
     apply(plugin = "com.lagradost.cloudstream3.gradle")
 
     cloudstream {
-        setRepo(System.getenv("GITHUB_REPOSITORY") ?: "efczpaclasses-boop/brostream-by-faz")
+        setRepo(System.getenv("GITHUB_REPOSITORY") ?: "efczpaclasses-boop/brostream-by-faz-2")
     }
 
     android {

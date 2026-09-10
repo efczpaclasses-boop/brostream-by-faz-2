@@ -10,7 +10,7 @@ import java.util.concurrent.ConcurrentHashMap
 
 class EpornerGayProvider : MainAPI() {
     override var mainUrl = MP_BASE
-    override var name = "BroStream by Faz"
+    override var name = "BroStream by Faz 2"
     override var lang = "en"
     override val hasMainPage = true
     override val hasQuickSearch = true
@@ -40,7 +40,13 @@ class EpornerGayProvider : MainAPI() {
 
     override val mainPage = mainPageOf(
         "MP|/" to "🔥 Fresh Gay Men",
+        "GV|/" to "🆕 New Gay Videos",
         "GV|/categories/amateur/" to "🏠 Top Amateur Men",
+        "MP|/search/?q=amateur+gay+blowjob" to "👄 Amateur Blowjobs",
+        "GPT|/search/videos/straight-guy-blowjob/page1.html" to "🔥 Straight Guys Getting Serviced",
+        "GV|/search/straight-friends-gay/" to "🤝 Straight Friends Playing Around",
+        "MP|/search/?q=gay+first+time" to "🫣 First-Time Encounters",
+        "GV|/search/gay-onlyfans/" to "📱 OnlyFans & Creator Men",
         "CURATED" to "⭐ MyVidster Gay Picks — 3 Profiles",
         "GV|/categories/homemade/" to "🎥 Homemade & Non-Studio",
         "MP|/categories/latino/" to "🌶️ Latino Men",
@@ -68,7 +74,12 @@ class EpornerGayProvider : MainAPI() {
     )
 
     private val queries = mapOf(
-        "MP|/" to "gay men", "GV|/categories/amateur/" to "amateur men",
+        "MP|/" to "gay men", "GV|/" to "new gay men", "GV|/categories/amateur/" to "amateur men",
+        "MP|/search/?q=amateur+gay+blowjob" to "amateur gay blowjob",
+        "GPT|/search/videos/straight-guy-blowjob/page1.html" to "straight guy gay blowjob",
+        "GV|/search/straight-friends-gay/" to "straight friends gay experimenting",
+        "MP|/search/?q=gay+first+time" to "gay first time",
+        "GV|/search/gay-onlyfans/" to "gay onlyfans creator men",
         "GV|/categories/homemade/" to "homemade gay", "MP|/categories/latino/" to "latino men",
         "GV|/categories/brazilian/" to "brazilian men", "MP|/categories/blowjob/" to "gay blowjob",
         "GV|/categories/compilation/" to "gay compilation", "MP|/categories/compilation/" to "cum compilation",

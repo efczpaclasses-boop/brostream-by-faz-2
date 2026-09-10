@@ -1,3 +1,3 @@
-rootProject.name = "BroStreamByFazCloudstream"
-include("BroStreamFreshByFaz")
-project(":BroStreamFreshByFaz").projectDir = file("EpornerGay")
+rootProject.name = "BroStreamByFaz2Cloudstream"
+include("BroStreamFreshByFaz2")
+project(":BroStreamFreshByFaz2").projectDir = file("EpornerGay")
