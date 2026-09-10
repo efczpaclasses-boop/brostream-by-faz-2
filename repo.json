@@ -3,6 +3,6 @@
   "description": "Adults-only gay-men CloudStream extension repository",
   "manifestVersion": 1,
   "pluginLists": [
-    "https://raw.githubusercontent.com/efczpaclasses-boop/brostream-by-faz-2/builds/plugins.json?v=1"
+    "https://raw.githubusercontent.com/efczpaclasses-boop/brostream-by-faz-2/builds/plugins.json?v=2"
   ]
 }

@@ -102,11 +102,11 @@ class EpornerGayProvider : MainAPI() {
             request.data.startsWith("GPT|") -> gayPornTube(page, request.data.removePrefix("GPT|"))
             else -> emptyList()
         }
-        val claimedPrimary = primary.filter(::isMenOnly)
+        val claimedPrimary = primary.filter(::isMenOnly).filter { matchesRow(it, request.data) }
             .filter { claim(it, request.data) }.distinctBy(::canonicalKey)
         val backup = if (request.data != "CURATED" && claimedPrimary.size < 12)
             fallback(page, queries[request.data].orEmpty(), primary.firstOrNull()?.source)
-                .filter(::isMenOnly).filter { claim(it, request.data) }
+                .filter(::isMenOnly).filter { matchesRow(it, request.data) }.filter { claim(it, request.data) }
         else emptyList()
         val items = (claimedPrimary + backup).distinctBy(::canonicalKey).take(60)
         return newHomePageResponse(
@@ -237,9 +237,22 @@ class EpornerGayProvider : MainAPI() {
 
     private fun isMenOnly(item: ItemData): Boolean {
         if (item.url.isBlank() || item.title.isBlank()) return false
-        val blocked = Regex("\\b(lesbian|girl|girls|woman|women|female|milf|mom|mommy|mother|wife|wives|daughter|sister|girlfriend|bride|babe|chick|lady|ladies|pussy|vagina|clit|tits|boobs|breasts|pregnant|shemale|trans|tranny|futa|stepmom|stepdaughter|schoolgirl|cougar|granny)\\b", RegexOption.IGNORE_CASE)
+        val blocked = Regex("\\b(lesbian|girl|girls|woman|women|female|milf|mom|mommy|mother|wife|wives|daughter|sister|girlfriend|bride|babe|chick|lady|ladies|pussy|vagina|clit|tits|boobs|breasts|pregnant|shemale|trans|tranny|futa|stepmom|stepdaughter|schoolgirl|cougar|granny|doll)\\b", RegexOption.IGNORE_CASE)
         val mixed = Regex("\\b(straight couple|boy and girl|guy and girl|man and woman|husband and wife)\\b", RegexOption.IGNORE_CASE)
         return !blocked.containsMatchIn(item.title) && !mixed.containsMatchIn(item.title)
+    }
+
+    private fun matchesRow(item: ItemData, row: String): Boolean {
+        val title = item.title.lowercase()
+        val oral = Regex("\\b(blowjob|blow job|suck|sucking|sucked|oral|deepthroat|deep throat|head)\\b").containsMatchIn(title)
+        return when (row) {
+            "MP|/search/?q=amateur+gay+blowjob" -> oral && Regex("\\b(amateur|homemade|home made|real|selfmade)\\b").containsMatchIn(title)
+            "GPT|/search/videos/straight-guy-blowjob/page1.html" -> oral && Regex("\\b(straight|curious|bestie|friend|buddy)\\b").containsMatchIn(title)
+            "GV|/search/straight-friends-gay/" -> Regex("\\b(straight|curious)\\b").containsMatchIn(title) && Regex("\\b(friend|friends|bestie|buddy|buddies)\\b").containsMatchIn(title)
+            "MP|/search/?q=gay+first+time" -> Regex("\\b(first time|first-time|virgin|first experience|first contact|experiment)\\b").containsMatchIn(title)
+            "GV|/search/gay-onlyfans/" -> Regex("\\b(onlyfans|only fans|creator|fan site|webcam|subscriber)\\b").containsMatchIn(title)
+            else -> true
+        }
     }
 
     private fun claim(item: ItemData, row: String): Boolean {
