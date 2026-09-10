@@ -237,7 +237,7 @@ class EpornerGayProvider : MainAPI() {
 
     private fun isMenOnly(item: ItemData): Boolean {
         if (item.url.isBlank() || item.title.isBlank()) return false
-        val blocked = Regex("\\b(lesbian|girl|girls|woman|women|female|milf|mom|mommy|mother|wife|wives|daughter|sister|girlfriend|bride|babe|chick|lady|ladies|pussy|vagina|clit|tits|boobs|breasts|pregnant|shemale|trans|tranny|futa|stepmom|stepdaughter|schoolgirl|cougar|granny|doll)\\b", RegexOption.IGNORE_CASE)
+        val blocked = Regex("\\b(lesbian|girl|girls|woman|women|female|milf|mom|mommy|mother|wife|wives|daughter|sister|girlfriend|bride|babe|chick|lady|ladies|pussy|vagina|clit|tits|boobs|breasts|pregnant|shemale|trans|tranny|futa|stepmom|stepdaughter|schoolgirl|cougar|granny|doll|mujer|mujeres|chica|chicas|esposa|novia|hermana|madre|menina|mulher|esposa|namorada|irmã|mae)\\b", RegexOption.IGNORE_CASE)
         val mixed = Regex("\\b(straight couple|boy and girl|guy and girl|man and woman|husband and wife)\\b", RegexOption.IGNORE_CASE)
         return !blocked.containsMatchIn(item.title) && !mixed.containsMatchIn(item.title)
     }
@@ -246,6 +246,7 @@ class EpornerGayProvider : MainAPI() {
         val title = item.title.lowercase()
         val oral = Regex("\\b(blowjob|blow job|suck|sucking|sucked|oral|deepthroat|deep throat|head)\\b").containsMatchIn(title)
         return when (row) {
+            "MP|/categories/blowjob/" -> oral
             "MP|/search/?q=amateur+gay+blowjob" -> oral && Regex("\\b(amateur|homemade|home made|real|selfmade)\\b").containsMatchIn(title)
             "GPT|/search/videos/straight-guy-blowjob/page1.html" -> oral && Regex("\\b(straight|curious|bestie|friend|buddy)\\b").containsMatchIn(title)
             "GV|/search/straight-friends-gay/" -> Regex("\\b(straight|curious)\\b").containsMatchIn(title) && Regex("\\b(friend|friends|bestie|buddy|buddies)\\b").containsMatchIn(title)
