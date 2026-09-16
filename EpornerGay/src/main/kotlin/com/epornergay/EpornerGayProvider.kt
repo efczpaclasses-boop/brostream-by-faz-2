@@ -6,7 +6,6 @@ import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.utils.*
 import java.net.URI
 import java.net.URLEncoder
-import java.util.concurrent.ConcurrentHashMap
 
 class EpornerGayProvider : MainAPI() {
     override var mainUrl = MP_BASE
@@ -28,7 +27,7 @@ class EpornerGayProvider : MainAPI() {
     private val mapper = jacksonObjectMapper()
     private val userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0 Safari/537.36"
     private val headers = mapOf("User-Agent" to userAgent, "Accept" to "text/html,application/xhtml+xml")
-    private val owners = ConcurrentHashMap<String, String>()
+    private val claims = CatalogueClaims()
     private enum class Source { MANPORN, GAYVIDS, GAYPORNTUBE, CURATED }
 
     data class ItemData(
@@ -95,6 +94,7 @@ class EpornerGayProvider : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
+        require(page >= 1) { "Page numbers start at 1" }
         val primary = when {
             request.data == "CURATED" -> curated.drop((page - 1) * 20).take(20)
             request.data.startsWith("MP|") -> manPorn(page, request.data.removePrefix("MP|"))
@@ -102,13 +102,14 @@ class EpornerGayProvider : MainAPI() {
             request.data.startsWith("GPT|") -> gayPornTube(page, request.data.removePrefix("GPT|"))
             else -> emptyList()
         }
-        val claimedPrimary = primary.filter(::isMenOnly).filter { matchesRow(it, request.data) }
-            .filter { claim(it, request.data) }.distinctBy(::canonicalKey)
+        val eligiblePrimary = primary.filter(::isMenOnly).filter { matchesRow(it, request.data) }
+        val claimedPrimary = claims.select(request.data, page, eligiblePrimary, 60, ::itemKeys)
         val backup = if (request.data != "CURATED" && claimedPrimary.size < 12)
             fallback(page, queries[request.data].orEmpty(), primary.firstOrNull()?.source)
-                .filter(::isMenOnly).filter { matchesRow(it, request.data) }.filter { claim(it, request.data) }
+                .filter(::isMenOnly).filter { matchesRow(it, request.data) }
         else emptyList()
-        val items = (claimedPrimary + backup).distinctBy(::canonicalKey).take(60)
+        val items = if (backup.isEmpty()) claimedPrimary else
+            claims.select(request.data, page, claimedPrimary + backup, 60, ::itemKeys)
         return newHomePageResponse(
             HomePageList(request.name, items.map { it.response() }, request.data != "CURATED"),
             hasNext = request.data != "CURATED" && items.isNotEmpty(),
@@ -179,7 +180,7 @@ class EpornerGayProvider : MainAPI() {
             runCatching { manPorn(1, "/search/?q=${encode(query)}") }.getOrDefault(emptyList()),
             runCatching { gayVids(1, "/search/${slug(query)}/") }.getOrDefault(emptyList()),
             runCatching { gayPornTube(1, "/search/videos/${slug(query)}/page1.html") }.getOrDefault(emptyList()),
-        ).flatten().filter(::isMenOnly).distinctBy(::canonicalKey).take(80).map { it.response() }
+        ).flatten().filter(::isMenOnly).let { uniqueCatalogue(it, ::itemKeys) }.take(80).map { it.response() }
     }
 
     override suspend fun quickSearch(query: String): List<SearchResponse> = search(query)
@@ -208,17 +209,25 @@ class EpornerGayProvider : MainAPI() {
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         val item = parse(data) ?: return false
-        return when (runCatching { Source.valueOf(item.source) }.getOrNull()) {
-            Source.MANPORN -> directLinks(item, "ManPorn", callback)
-            Source.GAYVIDS -> directLinks(item, "GayVids", callback)
-            Source.GAYPORNTUBE -> directLinks(item, "GayPornTube", callback)
-            Source.CURATED -> runCatching { loadExtractor(item.url, item.url, subtitleCallback, callback); true }.getOrDefault(false)
-            null -> false
+        val deliveries = LinkDeliveries()
+        val trackedCallback: (ExtractorLink) -> Unit = { link ->
+            deliveries.emit(link.url) { callback(link) }
         }
+        attempt {
+            when (attempt { Source.valueOf(item.source) }) {
+                Source.MANPORN -> directLinks(item, "ManPorn", trackedCallback)
+                Source.GAYVIDS -> directLinks(item, "GayVids", trackedCallback)
+                Source.GAYPORNTUBE -> directLinks(item, "GayPornTube", trackedCallback)
+                Source.CURATED -> loadExtractor(item.url, item.url, subtitleCallback, trackedCallback)
+                null -> false
+            }
+        }
+        return deliveries.hasResults()
     }
 
     private suspend fun directLinks(item: ItemData, label: String, callback: (ExtractorLink) -> Unit): Boolean {
         val response = app.get(item.url, headers = headers, timeout = 25)
+        if (response.code !in 200..299) return false
         val declared = response.document.select("video source[src], source[type*=video][src]").mapNotNull { absolute(it.attr("src"), item.url) }
         val embedded = Regex("https?[^\\\"']+?\\.mp4[^\\\"'< ]*", RegexOption.IGNORE_CASE)
             .findAll(response.text).map { it.value.replace("\\/", "/").replace("&amp;", "&") }
@@ -257,35 +266,21 @@ class EpornerGayProvider : MainAPI() {
         }
     }
 
-    private fun claim(item: ItemData, row: String): Boolean {
-        val keys = listOf(canonicalKey(item), "title:${normalize(item.title)}")
-        if (keys.any { owners[it]?.let { owner -> owner != row } == true }) return false
-        keys.forEach { owners.putIfAbsent(it, row) }
-        return keys.all { owners[it] == row }
-    }
-
-    private fun canonicalKey(item: ItemData): String {
-        val groups = Regex("/videos?/(\\d+)|/watch/(\\d+)").find(item.url)?.groupValues
-        val id = groups?.drop(1)?.firstOrNull { it.isNotBlank() }
-        return if (id != null) "${item.source}:$id" else "${item.source}:${normalize(item.title)}"
-    }
-
-    private fun normalize(value: String): String = value.lowercase()
-        .replace(Regex("\\b(4k|2160p|1080p|720p|480p|hd|full video|gay porn|free porn)\\b"), "")
-        .replace(Regex("[^a-z0-9]"), "").take(100)
+    private fun itemKeys(item: ItemData): List<String> = catalogueKeys(item.url, item.title)
 
     private fun ItemData.response(): SearchResponse = newMovieSearchResponse("[$sourceLabel] $title", mapper.writeValueAsString(this), TvType.NSFW) {
         posterUrl = poster
-        quality = SearchQuality.HD
     }
 
     private val ItemData.sourceLabel: String get() = when (source) {
         Source.MANPORN.name -> "MP"; Source.GAYVIDS.name -> "GV"; Source.GAYPORNTUBE.name -> "GPT"; Source.CURATED.name -> "MV"; else -> source
     }
-    private fun parse(value: String): ItemData? = runCatching { mapper.readValue(value, ItemData::class.java) }.getOrNull()
+    private fun parse(value: String): ItemData? = attempt { mapper.readValue(value, ItemData::class.java) }
+        ?.takeIf { isHttpUrl(it.url) && it.title.isNotBlank() }
     private fun slug(value: String) = value.lowercase().trim().replace(Regex("[^a-z0-9]+"), "-").trim('-')
     private fun encode(value: String) = URLEncoder.encode(value, "UTF-8")
-    private fun absolute(value: String?, base: String): String? = if (value.isNullOrBlank()) null else runCatching { URI(base).resolve(value).toString() }.getOrNull()
+    private fun absolute(value: String?, base: String): String? = if (value.isNullOrBlank()) null else
+        attempt { URI(base).resolve(value).toString() }?.takeIf(::isHttpUrl)
 
     private val curated = listOf(
         ItemData(Source.CURATED.name, "https://www.xvideos.com/video.hoeabkmf390/danish_boy_and_gay_pornstar_frederik_known_from_6mag.dk_-_10", "Danish gay performer Frederik", "https://cdn2.myvidster.com/user/thumbs/e9e4cc891049f85139491c23bd14c5b7_1.jpg"),
