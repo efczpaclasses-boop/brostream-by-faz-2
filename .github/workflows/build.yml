@@ -33,12 +33,14 @@ jobs:
           ./gradlew BroStreamFreshByFaz2:testDebugUnitTest makePluginsJson
           python3 scripts/prepare_release.py \
             --plugins build/plugins.json \
-            --artifacts EpornerGay/build \
+            --artifacts BroStream/build \
             --repo repo.json \
             --output public \
             --repository "$GITHUB_REPOSITORY"
-      - name: Check source markers and sampled stream responses
-        run: python3 scripts/health_check.py
+      - name: Publish blocklist
+        run: cp blocklist.json public/blocklist.json
+      - name: Release gate
+        run: python3 scripts/release_gate.py --plugins public/plugins.json --artifacts public
       - name: Publish builds branch
         uses: peaceiris/actions-gh-pages@v4
         with:

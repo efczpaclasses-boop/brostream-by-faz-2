@@ -1,12 +1,12 @@
-package com.epornergay
+package com.brostream
 
 import android.content.Context
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 import com.lagradost.cloudstream3.plugins.Plugin
 
 @CloudstreamPlugin
-class EpornerGayPlugin : Plugin() {
+class BroStreamPlugin : Plugin() {
     override fun load(context: Context) {
-        registerMainAPI(EpornerGayProvider())
+        registerMainAPI(BroStreamProvider())
     }
 }

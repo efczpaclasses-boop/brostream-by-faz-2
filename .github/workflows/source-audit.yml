@@ -1,0 +1,25 @@
+name: Audit source metadata
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "41 4 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Report what each source exposes
+        run: python scripts/probe_sources.py | tee source-audit.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: source-audit
+          path: source-audit.json
