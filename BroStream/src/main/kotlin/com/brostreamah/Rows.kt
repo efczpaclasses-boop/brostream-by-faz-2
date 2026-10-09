@@ -144,6 +144,10 @@ internal object Rows {
         CategoryRow("MP|/categories/latino/", "🌶️ Latino Men",
             listOf(feed("MP", "/categories/latino/")),
             Topic(any = latino, minScore = 3), fallbackQuery = "latino men"),
+        CategoryRow("GV|/categories/interracial/", "Interracial Men", listOf(feed("GV", "/categories/interracial/")),
+            Topic(any = interracial), fallbackQuery = "gay interracial"),
+        CategoryRow("MP|/categories/asian/", "Asian Men", listOf(feed("MP", "/categories/asian/")),
+            Topic(any = asian), fallbackQuery = "asian gay men"),
         CategoryRow("GPT|/search/videos/pnp-slam/page1.html", "🔥 PNP & Slam",
             listOf(feed("GPT", "/search/videos/pnp-slam/page1.html")), Topic(any = pnp), fallbackQuery = "pnp slam"),
         CategoryRow("GV|/categories/party/", "🎉 Party & Group Play",
@@ -171,10 +175,6 @@ internal object Rows {
             Topic(any = gloryhole), fallbackQuery = "gay gloryhole"),
         CategoryRow("MP|/categories/handjob/", "Handjobs", listOf(feed("MP", "/categories/handjob/")),
             Topic(any = handjob), fallbackQuery = "gay handjob"),
-        CategoryRow("GV|/categories/interracial/", "Interracial Men", listOf(feed("GV", "/categories/interracial/")),
-            Topic(any = interracial), fallbackQuery = "gay interracial"),
-        CategoryRow("MP|/categories/asian/", "Asian Men", listOf(feed("MP", "/categories/asian/")),
-            Topic(any = asian), fallbackQuery = "asian gay men"),
     )
 
     private val byKey = all.associateBy { it.key }
