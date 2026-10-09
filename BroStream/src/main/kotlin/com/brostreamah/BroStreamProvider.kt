@@ -7,8 +7,6 @@ import com.brostreamah.sources.VideoSource
 import com.brostreamah.sources.Web
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.CloudStreamApp.Companion.getKeyClass
-import com.lagradost.cloudstream3.CloudStreamApp.Companion.setKey
 import com.lagradost.cloudstream3.utils.*
 
 class BroStreamProvider : MainAPI() {
@@ -50,7 +48,7 @@ class BroStreamProvider : MainAPI() {
         private fun load() {
             if (loaded) return
             loaded = true
-            attempt { getKeyClass(VERDICTS_KEY, String::class.java) }?.let { text ->
+            Persist.read(VERDICTS_KEY)?.let { text ->
                 attempt { mapper.readTree(text) }?.fields()?.forEach { (id, node) ->
                     val verdict = attempt { Verdict.valueOf(node.path("v").asText()) } ?: return@forEach
                     memory.put(id, StoredVerdict(verdict, node.path("t").asLong()))
@@ -69,7 +67,7 @@ class BroStreamProvider : MainAPI() {
         private fun save() {
             // Only the newest entries are kept, so the stored value stays small.
             val snapshot = memory.recent(1500).associate { (id, v) -> id to mapOf("v" to v.verdict.name, "t" to v.at) }
-            attempt { setKey(VERDICTS_KEY, mapper.writeValueAsString(snapshot)) }
+            attempt { mapper.writeValueAsString(snapshot) }?.let { Persist.write(VERDICTS_KEY, it) }
         }
     }
 
@@ -84,7 +82,17 @@ class BroStreamProvider : MainAPI() {
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         require(page >= 1) { "Page numbers start at 1" }
         val row = Rows.find(request.data)
-        val items = if (row == null) emptyList() else pipeline.loadRow(row, page)
+        val items = try {
+            if (row == null) emptyList() else pipeline.loadRow(row, page)
+        } catch (cancelled: java.util.concurrent.CancellationException) {
+            throw cancelled
+        } catch (problem: Throwable) {
+            // Show the failure instead of a blank screen, so it can be reported and fixed.
+            val note = "⚠ ${request.name}: ${problem.javaClass.simpleName} ${problem.message.orEmpty()}".take(160)
+            return newHomePageResponse(HomePageList(request.name, listOf(
+                newMovieSearchResponse(note, "https://error.invalid/", TvType.NSFW),
+            ), false), hasNext = false)
+        }
         // A row with too few verified videos is hidden rather than shown under an empty heading.
         if (items.isEmpty()) return newHomePageResponse(emptyList<HomePageList>(), false)
         return newHomePageResponse(HomePageList(request.name, items.map { it.response() }, true), hasNext = true)
