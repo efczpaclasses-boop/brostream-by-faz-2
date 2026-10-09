@@ -13,7 +13,7 @@ from health_check import UA, card_links, card_titles, detail_links, extract_stre
 
 FEMALE_APPROX = re.compile(
     r"\b(?:girls?|wom[ae]n|female|milf|mom|mommy|wife|daughter|sister|girlfriend|lesbian|bisexual|pussy|tits|trans|shemale)\b", re.I)
-CARD_MARK = {"MP": rb'class=["\'][^"\']*thumb', "GV": rb'class=["\'][^"\']*\bitem\b', "GPT": rb'data-video-id'}
+CARD_MARK = {"MP": rb'class=["\'][^"\']*thumb', "GV": rb'list-videos', "GPT": rb'data-video-id'}
 
 
 def squeeze(text: str, limit: int) -> str:
@@ -33,9 +33,18 @@ def anchors(page: str, pattern: str, limit: int = 6) -> list[str]:
     return [squeeze(x, 220) for x in found[:limit]]
 
 
+def window(page: str, pattern: str, size: int) -> str | None:
+    match = re.search(pattern, page, re.I)
+    return squeeze(page[match.start():match.start() + size * 3], size) if match else None
+
+
 def sample_detail(page: str) -> dict:
     ld = re.search(r'<script[^>]+application/ld\+json[^>]*>(.*?)</script>', page, re.I | re.S)
     return {
+        "meta_keywords": re.findall(r'<meta[^>]+name=["\']keywords["\'][^>]*>', page, re.I)[:1],
+        "meta_description": re.findall(r'<meta[^>]+name=["\']description["\'][^>]*>', page, re.I)[:1],
+        "h1_window": window(page, r"<h1", 2600),
+        "player_window": window(page, r"video_url", 700),
         "json_ld": squeeze(ld.group(1), 1800) if ld else None,
         "og_video": re.findall(r'<meta[^>]+og:video[^>]*>', page, re.I)[:4],
         "source_tags": [squeeze(x, 200) for x in re.findall(r"<source[^>]*>", page, re.I)[:6]],
