@@ -7,7 +7,7 @@ import com.brostreamah.StreamCandidate
 import com.brostreamah.StreamExtractor
 import com.brostreamah.VideoDetails
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import com.lagradost.cloudstream3.app
+import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 
@@ -75,9 +75,8 @@ abstract class HtmlVideoSource : VideoSource {
     }
 
     override suspend fun playback(item: ItemData): List<StreamCandidate> {
-        val response = app.get(item.url, headers = Web.headers, timeout = 25)
-        if (response.code !in 200..299) return emptyList()
-        val doc = response.document
+        val response = Web.page(item.url)?.takeIf { it.code in 200..299 } ?: return emptyList()
+        val doc = Jsoup.parse(response.text, item.url)
         val structured = Metadata.structured(structuredBlocks(doc), mapper).contentUrls
         return StreamExtractor.extract(doc, response.text, item.url, structured)
     }

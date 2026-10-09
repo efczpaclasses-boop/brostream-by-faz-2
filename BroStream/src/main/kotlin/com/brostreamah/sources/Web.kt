@@ -5,6 +5,7 @@ import com.brostreamah.StreamValidator
 import com.brostreamah.attempt
 import com.brostreamah.isHttpUrl
 import com.lagradost.cloudstream3.app
+import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import java.net.URI
 import java.net.URLEncoder
@@ -14,8 +15,17 @@ internal object Web {
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0 Safari/537.36"
     val headers = mapOf("User-Agent" to USER_AGENT, "Accept" to "text/html,application/xhtml+xml")
 
+    class Response(val code: Int, val text: String)
+
+    /** Fetches a page. Replaced only by the opt-in live test, which runs outside Android. */
+    var transport: suspend (String) -> Response? = { url ->
+        attempt { app.get(url, headers = headers, timeout = 25).let { Response(it.code, it.text) } }
+    }
+
+    suspend fun page(url: String): Response? = transport(url)
+
     suspend fun document(url: String): Document? =
-        attempt { app.get(url, headers = headers, timeout = 25).document }
+        page(url)?.takeIf { it.code in 200..299 }?.let { Jsoup.parse(it.text, url) }
 
     fun absolute(value: String?, base: String): String? =
         if (value.isNullOrBlank()) null

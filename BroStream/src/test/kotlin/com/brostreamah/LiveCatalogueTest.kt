@@ -15,6 +15,17 @@ import java.io.File
 class LiveCatalogueTest {
     @Test fun `report what every row shows`() {
         assumeTrue(System.getProperty("live").orEmpty().isNotBlank())
+        // Outside Android CloudStream's own client cannot start, so plain HTTP stands in for it.
+        com.brostreamah.sources.Web.transport = { url ->
+            try {
+                val c = java.net.URL(url).openConnection() as java.net.HttpURLConnection
+                c.setRequestProperty("User-Agent", com.brostreamah.sources.Web.USER_AGENT)
+                c.connectTimeout = 20000; c.readTimeout = 25000
+                val code = c.responseCode
+                val text = (if (code in 200..299) c.inputStream else c.errorStream)?.bufferedReader()?.use { it.readText() }.orEmpty()
+                com.brostreamah.sources.Web.Response(code, text)
+            } catch (e: Exception) { null }
+        }
         val out = StringBuilder()
         val sources = listOf(ManPornSource(), GayVidsSource(), GayPornTubeSource())
         val pipeline = Pipeline(sources, Deduplicator { id -> sources.firstOrNull { it.id == id }?.let { SourceProfile(it.reliability, it.speed) } })

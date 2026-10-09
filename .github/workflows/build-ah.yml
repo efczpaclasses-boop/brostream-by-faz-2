@@ -44,6 +44,7 @@ jobs:
             --repository "$GITHUB_REPOSITORY" \
             --branch builds-ah 2>&1 | tee -a report/build.txt
           cp blocklist.json public/blocklist.json
+          cp -r BroStream/build/test-results/testDebugUnitTest test-results-main
       - name: Collect what the live sites expose
         continue-on-error: true
         run: |
@@ -61,14 +62,14 @@ jobs:
         run: |
           mkdir -p report
           set -o pipefail
-          python3 scripts/release_gate.py --plugins public/plugins.json --artifacts public 2>&1 | tee report/gate.txt
+          python3 scripts/release_gate.py --plugins public/plugins.json --artifacts public --tests test-results-main 2>&1 | tee report/gate.txt
       - name: Save report
         if: always()
         run: |
           mkdir -p report
           echo "gate outcome: ${{ steps.gate.outcome }}" > report/summary.txt
           date -u >> report/summary.txt
-          cp BroStream/build/test-results/testDebugUnitTest/*.xml report/ 2>/dev/null || true
+          cp test-results-main/*.xml report/ 2>/dev/null || true
       - name: Publish report
         if: always()
         uses: peaceiris/actions-gh-pages@v4
