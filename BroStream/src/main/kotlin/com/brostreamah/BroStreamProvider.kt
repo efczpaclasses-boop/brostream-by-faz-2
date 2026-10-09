@@ -7,7 +7,7 @@ import com.brostreamah.sources.VideoSource
 import com.brostreamah.sources.Web
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.CloudStreamApp.Companion.getKey
+import com.lagradost.cloudstream3.CloudStreamApp.Companion.getKeyClass
 import com.lagradost.cloudstream3.CloudStreamApp.Companion.setKey
 import com.lagradost.cloudstream3.utils.*
 
@@ -50,7 +50,7 @@ class BroStreamProvider : MainAPI() {
         private fun load() {
             if (loaded) return
             loaded = true
-            attempt { getKey<String>(VERDICTS_KEY) }?.let { text ->
+            attempt { getKeyClass(VERDICTS_KEY, String::class.java) }?.let { text ->
                 attempt { mapper.readTree(text) }?.fields()?.forEach { (id, node) ->
                     val verdict = attempt { Verdict.valueOf(node.path("v").asText()) } ?: return@forEach
                     memory.put(id, StoredVerdict(verdict, node.path("t").asLong()))
