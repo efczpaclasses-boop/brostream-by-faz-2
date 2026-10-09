@@ -1,0 +1,22 @@
+[
+  {
+    "iconUrl": "https://www.google.com/s2/favicons?domain=manporn.xxx&sz=%size%",
+    "fileHash": "sha256-0c75d1745d1fefb90ccac89a3e720648c7d3dee590c87e26355ba2e248cecb16",
+    "apiVersion": 1,
+    "repositoryUrl": "https://github.com/efczpaclasses-boop/brostream-by-faz-2",
+    "fileSize": 102064,
+    "status": 3,
+    "language": "en",
+    "authors": [
+      "Faz"
+    ],
+    "tvTypes": [
+      "NSFW"
+    ],
+    "version": 1,
+    "internalName": "BroStreamByFazAH",
+    "description": "BroStream by Faz_AH_: men-only evidence checks with detail-page inspection and quarantine, verified categories, real New Today and Popular This Week rows, and tested stream links. Adults only.",
+    "url": "https://raw.githubusercontent.com/efczpaclasses-boop/brostream-by-faz-2/builds-ah/BroStreamByFazAH-v1.cs3",
+    "name": "BroStreamByFazAH"
+  }
+]
