@@ -32,15 +32,17 @@ jobs:
         run: python3 -B -m unittest discover -s scripts -p 'test_*.py' -v
       - name: Build, test and package
         run: |
+          mkdir -p report
+          set -o pipefail
           chmod +x gradlew
-          ./gradlew BroStreamByFazAH:testDebugUnitTest makePluginsJson
+          ./gradlew BroStreamByFazAH:testDebugUnitTest makePluginsJson --console=plain 2>&1 | tee report/build.txt
           python3 scripts/prepare_release.py \
             --plugins build/plugins.json \
             --artifacts BroStream/build \
             --repo repo-ah.json \
             --output public \
             --repository "$GITHUB_REPOSITORY" \
-            --branch builds-ah
+            --branch builds-ah 2>&1 | tee -a report/build.txt
           cp blocklist.json public/blocklist.json
       - name: Collect what the live sites expose
         continue-on-error: true
