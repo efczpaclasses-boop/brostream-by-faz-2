@@ -66,7 +66,8 @@ internal class Pipeline(
     private fun needsMore(item: ItemData, row: CategoryRow?): Boolean {
         if (row == null) return false
         val topic = row.topic
-        if (topic != null && topic.needsDetails && !topic.accepts(item, true)) return true
+        // A title that does not settle the category sends us to the video's own tags.
+        if (topic != null && !item.detailed && !topic.accepts(item, true)) return true
         return row.hasWindow && (item.uploadedAt == 0L || row.sort == SortRule.MOST_VIEWED && item.views == 0L)
     }
 
