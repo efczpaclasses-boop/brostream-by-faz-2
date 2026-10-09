@@ -1,4 +1,4 @@
-package com.brostream
+package com.brostreamah
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper

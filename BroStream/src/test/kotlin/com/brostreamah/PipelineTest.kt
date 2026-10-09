@@ -1,6 +1,6 @@
-package com.brostream
+package com.brostreamah
 
-import com.brostream.sources.VideoSource
+import com.brostreamah.sources.VideoSource
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.*
 import org.junit.Test

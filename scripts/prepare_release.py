@@ -72,7 +72,7 @@ def validate_artifact(entry: dict, artifacts: Path) -> tuple[Path, int, str]:
     return artifact, size, file_hash
 
 
-def prepare_release(plugins: Path, artifacts: Path, repo: Path, output: Path, repository: str) -> None:
+def prepare_release(plugins: Path, artifacts: Path, repo: Path, output: Path, repository: str, branch: str = "builds") -> None:
     repository = validate_repository(repository)
     entries = read_json(plugins)
     repo_metadata = read_json(repo)
@@ -83,7 +83,9 @@ def prepare_release(plugins: Path, artifacts: Path, repo: Path, output: Path, re
     if output.exists():
         raise ReleaseError(f"output directory must not already exist: {output}")
 
-    base_url = f"https://raw.githubusercontent.com/{repository}/builds"
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", branch):
+        raise ReleaseError("branch must be a simple branch name")
+    base_url = f"https://raw.githubusercontent.com/{repository}/{branch}"
     prepared = []
     destinations = set()
     for entry in entries:
@@ -128,9 +130,10 @@ def main() -> int:
     parser.add_argument("--repo", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--repository", required=True)
+    parser.add_argument("--branch", default="builds", help="branch the files are published to")
     args = parser.parse_args()
     try:
-        prepare_release(args.plugins, args.artifacts, args.repo, args.output, args.repository)
+        prepare_release(args.plugins, args.artifacts, args.repo, args.output, args.repository, args.branch)
     except (ReleaseError, OSError) as exc:
         print(f"Release packaging failed: {exc}", file=sys.stderr)
         return 1

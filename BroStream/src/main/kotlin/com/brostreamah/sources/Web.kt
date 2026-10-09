@@ -1,9 +1,9 @@
-package com.brostream.sources
+package com.brostreamah.sources
 
-import com.brostream.StreamCheck
-import com.brostream.StreamValidator
-import com.brostream.attempt
-import com.brostream.isHttpUrl
+import com.brostreamah.StreamCheck
+import com.brostreamah.StreamValidator
+import com.brostreamah.attempt
+import com.brostreamah.isHttpUrl
 import com.lagradost.cloudstream3.app
 import org.jsoup.nodes.Document
 import java.net.URI

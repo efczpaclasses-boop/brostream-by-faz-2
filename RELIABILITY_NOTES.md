@@ -13,7 +13,7 @@ These are local software changes. They have not been committed, published, or in
 
 ## Verification
 
-1. Run the synthetic Kotlin regression tests with `./gradlew BroStreamFreshByFaz2:testDebugUnitTest` using Java 17 and Android SDK 35.
+1. Run the synthetic Kotlin regression tests with `./gradlew BroStreamByFazAH:testDebugUnitTest` using Java 17 and Android SDK 35.
 2. Run the 35 synthetic Python checks with `python3 -B -m unittest discover -s scripts -p 'test_*.py' -v`.
 3. Build the local package with `./gradlew makePluginsJson`.
 4. Validate release metadata and packages with `scripts/prepare_release.py`, using an output directory that does not already exist.

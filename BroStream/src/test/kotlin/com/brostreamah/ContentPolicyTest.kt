@@ -1,4 +1,4 @@
-package com.brostream
+package com.brostreamah
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue

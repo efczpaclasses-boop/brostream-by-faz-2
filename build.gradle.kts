@@ -40,7 +40,7 @@ subprojects {
     }
 
     android {
-        namespace = "com.brostream"
+        namespace = "com.brostreamah"
         defaultConfig {
             minSdk = 21
             compileSdkVersion(35)

@@ -1,4 +1,4 @@
-package com.brostream
+package com.brostreamah
 
 import org.jsoup.Jsoup
 import org.junit.Assert.*

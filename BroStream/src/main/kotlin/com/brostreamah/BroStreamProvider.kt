@@ -1,10 +1,10 @@
-package com.brostream
+package com.brostreamah
 
-import com.brostream.sources.GayPornTubeSource
-import com.brostream.sources.GayVidsSource
-import com.brostream.sources.ManPornSource
-import com.brostream.sources.VideoSource
-import com.brostream.sources.Web
+import com.brostreamah.sources.GayPornTubeSource
+import com.brostreamah.sources.GayVidsSource
+import com.brostreamah.sources.ManPornSource
+import com.brostreamah.sources.VideoSource
+import com.brostreamah.sources.Web
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.CloudStreamApp.Companion.getKey
@@ -14,7 +14,7 @@ import com.lagradost.cloudstream3.utils.*
 class BroStreamProvider : MainAPI() {
     // Identity only. Every source builds its URLs from its own fixed base URL.
     override var mainUrl = ManPornSource.BASE_URL
-    override var name = "BroStream by Faz 2"
+    override var name = "BroStream by Faz_AH_"
     override var lang = "en"
     override val hasMainPage = true
     override val hasQuickSearch = true
@@ -75,7 +75,7 @@ class BroStreamProvider : MainAPI() {
 
     companion object {
         private const val BLOCKLIST_URL =
-            "https://raw.githubusercontent.com/efczpaclasses-boop/brostream-by-faz-2/builds/blocklist.json"
+            "https://raw.githubusercontent.com/efczpaclasses-boop/brostream-by-faz-2/builds-ah/blocklist.json"
         private const val VERDICTS_KEY = "brostream_verdicts_v1"
     }
 

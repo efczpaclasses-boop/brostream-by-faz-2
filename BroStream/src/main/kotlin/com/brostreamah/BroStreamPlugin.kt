@@ -1,4 +1,4 @@
-package com.brostream
+package com.brostreamah
 
 import android.content.Context
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin

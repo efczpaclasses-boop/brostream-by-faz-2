@@ -1,9 +1,9 @@
-package com.brostream.sources
+package com.brostreamah.sources
 
-import com.brostream.ItemData
-import com.brostream.SourceHealth
-import com.brostream.StreamCandidate
-import com.brostream.VideoDetails
+import com.brostreamah.ItemData
+import com.brostreamah.SourceHealth
+import com.brostreamah.StreamCandidate
+import com.brostreamah.VideoDetails
 
 /** Every provider exposes the same four operations and owns its own fixed base URL. */
 interface VideoSource {

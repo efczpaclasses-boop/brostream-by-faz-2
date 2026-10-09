@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-PACKAGE = ROOT / "BroStream/src/main/kotlin/com/brostream"
+PACKAGE = ROOT / "BroStream/src/main/kotlin/com/brostreamah"
 DEFAULT_MIN_ITEMS = 8
 
 

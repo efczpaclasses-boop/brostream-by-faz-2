@@ -1,11 +1,11 @@
-package com.brostream.sources
+package com.brostreamah.sources
 
-import com.brostream.ItemData
-import com.brostream.Metadata
-import com.brostream.SourceHealth
-import com.brostream.StreamCandidate
-import com.brostream.StreamExtractor
-import com.brostream.VideoDetails
+import com.brostreamah.ItemData
+import com.brostreamah.Metadata
+import com.brostreamah.SourceHealth
+import com.brostreamah.StreamCandidate
+import com.brostreamah.StreamExtractor
+import com.brostreamah.VideoDetails
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.lagradost.cloudstream3.app
 import org.jsoup.nodes.Document

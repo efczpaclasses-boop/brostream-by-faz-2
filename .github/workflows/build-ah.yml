@@ -1,0 +1,79 @@
+name: Build BroStream by Faz_AH_
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [release-ah]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: extension-ah-${{ github.repository }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Prepare Android SDK
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-35" "build-tools;35.0.0"
+      - name: Python tests
+        run: python3 -B -m unittest discover -s scripts -p 'test_*.py' -v
+      - name: Build, test and package
+        run: |
+          chmod +x gradlew
+          ./gradlew BroStreamByFazAH:testDebugUnitTest makePluginsJson
+          python3 scripts/prepare_release.py \
+            --plugins build/plugins.json \
+            --artifacts BroStream/build \
+            --repo repo-ah.json \
+            --output public \
+            --repository "$GITHUB_REPOSITORY" \
+            --branch builds-ah
+          cp blocklist.json public/blocklist.json
+      - name: Collect what the live sites expose
+        continue-on-error: true
+        run: |
+          mkdir -p report
+          python3 scripts/probe_sources.py > report/audit.json 2> report/audit-errors.txt || true
+      - name: Release gate
+        id: gate
+        continue-on-error: true
+        run: |
+          mkdir -p report
+          set -o pipefail
+          python3 scripts/release_gate.py --plugins public/plugins.json --artifacts public 2>&1 | tee report/gate.txt
+      - name: Save report
+        if: always()
+        run: |
+          mkdir -p report
+          echo "gate outcome: ${{ steps.gate.outcome }}" > report/summary.txt
+          date -u >> report/summary.txt
+          cp BroStream/build/test-results/testDebugUnitTest/*.xml report/ 2>/dev/null || true
+      - name: Publish report
+        if: always()
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: ci-reports
+          publish_dir: ./report
+          force_orphan: true
+      - name: Publish extension (only if the gate passed)
+        if: steps.gate.outcome == 'success'
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: builds-ah
+          publish_dir: ./public
+          keep_files: true

@@ -1,4 +1,4 @@
-package com.brostream
+package com.brostreamah
 
 import org.junit.Assert.*
 import org.junit.Test
@@ -186,9 +186,9 @@ class CatalogueReliabilityTest {
     }
 
     @Test fun `every provider uses its own base URL`() {
-        assertEquals("https://manporn.xxx", com.brostream.sources.ManPornSource.BASE_URL)
-        assertEquals("https://www.gayvids.tv", com.brostream.sources.GayVidsSource.BASE_URL)
-        assertEquals("https://www.gayporntube.com", com.brostream.sources.GayPornTubeSource.BASE_URL)
+        assertEquals("https://manporn.xxx", com.brostreamah.sources.ManPornSource.BASE_URL)
+        assertEquals("https://www.gayvids.tv", com.brostreamah.sources.GayVidsSource.BASE_URL)
+        assertEquals("https://www.gayporntube.com", com.brostreamah.sources.GayPornTubeSource.BASE_URL)
     }
 
     @Test fun `malformed and non network URLs are rejected`() {

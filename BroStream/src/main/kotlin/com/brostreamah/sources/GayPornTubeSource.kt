@@ -1,6 +1,6 @@
-package com.brostream.sources
+package com.brostreamah.sources
 
-import com.brostream.ItemData
+import com.brostreamah.ItemData
 import org.jsoup.nodes.Document
 
 class GayPornTubeSource : HtmlVideoSource() {

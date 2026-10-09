@@ -1,4 +1,4 @@
-package com.brostream
+package com.brostreamah
 
 /**
  * One catalogue entry. Only the lean fields travel inside the CloudStream URL (see [lean]); the rest is

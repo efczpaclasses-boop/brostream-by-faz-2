@@ -1,7 +1,7 @@
-package com.brostream
+package com.brostreamah
 
-import com.brostream.sources.VideoSource
-import com.brostream.sources.Web
+import com.brostreamah.sources.VideoSource
+import com.brostreamah.sources.Web
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope

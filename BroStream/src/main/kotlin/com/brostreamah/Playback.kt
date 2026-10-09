@@ -1,6 +1,6 @@
-package com.brostream
+package com.brostreamah
 
-import com.brostream.sources.Web
+import com.brostreamah.sources.Web
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.parser.Parser
