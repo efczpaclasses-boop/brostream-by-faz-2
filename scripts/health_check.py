@@ -68,8 +68,24 @@ def card_links(prefix: str, page: bytes, base: str) -> list[str]:
     return list(seen)
 
 
+def detail_links(prefix: str, page: bytes, base: str) -> list[str]:
+    """Watch-page URLs found in a listing. GayPornTube cards carry an id, so its anchors are read instead."""
+    if prefix != "GPT":
+        return card_links(prefix, page, base)
+    seen: dict[str, None] = {}
+    for tag in re.findall(rb"<a\b[^>]*>", page, re.I):
+        if re.search(rb'class=["\'][^"\']*\bimage\b', tag, re.I):
+            href = re.search(rb'href=["\']([^"\']+)', tag, re.I)
+            if href:
+                url = urljoin(base, html.unescape(href.group(1).decode("utf-8", "ignore")))
+                if "/video" in url and not re.search(r"\.(?:jpe?g|png|gif|webp)(?:\?|$)", url, re.I):
+                    seen.setdefault(url, None)
+    return list(seen)
+
+
 def card_titles(page: bytes) -> list[str]:
-    return [html.unescape(x.decode("utf-8", "ignore")) for x in re.findall(rb'(?:title|alt)=["\']([^"\']{6,200})', page, re.I)]
+    raw = [html.unescape(x.decode("utf-8", "ignore")) for x in re.findall(rb'(?:title|alt)=["\']([^"\']{6,200})', page, re.I)]
+    return list(dict.fromkeys(raw))
 
 
 def first_poster(page: bytes, base: str) -> str | None:
@@ -161,9 +177,9 @@ def run_live() -> tuple[list[str], list[str]]:
         counts[feed], pages[feed] = len(links), (page, links)
     failures += evaluate_rows(rows, counts)
 
-    titles = [t for page, _ in (v for v in pages.values()) for t in card_titles(page)]
-    ratio = duplicate_ratio(titles)
-    notes.append(f"duplicate ratio across sampled titles: {ratio:.2f} (limit {DUPLICATE_THRESHOLD})")
+    # Identical strings are one card (title and alt repeat it), so this measures renamed copies on a page.
+    ratio = max((duplicate_ratio(card_titles(page)) for page, _ in pages.values()), default=0.0)
+    notes.append(f"worst per-page duplicate ratio: {ratio:.2f} (limit {DUPLICATE_THRESHOLD})")
     if ratio > DUPLICATE_THRESHOLD:
         failures.append(f"duplicate level {ratio:.2f} exceeds {DUPLICATE_THRESHOLD}")
 
@@ -175,10 +191,8 @@ def run_live() -> tuple[list[str], list[str]]:
         feed, (page, links) = sample
         if (problem := check_poster(first_poster(page, bases[prefix]), prefix)):
             failures.append(problem)
-        detail = links[0] if prefix != "GPT" else None
-        if detail is None:
-            match = re.search(rb'href=["\'](https?[^"\']+/video[^"\']*)', page, re.I)
-            detail = html.unescape(match.group(1).decode()) if match else None
+        found = detail_links(prefix, page, bases[prefix])
+        detail = found[0] if found else None
         if detail is None:
             failures.append(f"{prefix}: no detail page link found")
             continue
