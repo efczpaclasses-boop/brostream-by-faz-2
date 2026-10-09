@@ -44,7 +44,12 @@ internal class Pipeline(
     private val blocklist: suspend () -> Blocklist = { Blocklist.EMPTY },
     val stats: PolicyStats = PolicyStats(),
     private val ownerOf: (ItemData) -> CategoryRow? = Rows::ownerOf,
+    private val trustSiteDeclaration: Boolean = true,
 ) {
+    private fun classify(item: ItemData, block: Blocklist): Assessment = ContentPolicy.classify(
+        item, block, trustSiteDeclaration && sources.firstOrNull { it.id == item.source }?.declaresMaleOnly == true,
+    )
+
     private val negativeTtl = 6 * 3_600_000L
     private val byPrefix = sources.associateBy { it.prefix }
     private val profile = { id: String -> sources.firstOrNull { it.id == id }?.let { SourceProfile(it.reliability, it.speed) } }
@@ -73,19 +78,19 @@ internal class Pipeline(
         val first = items.filter { item ->
             val known = verdicts.get(canonicalId(item))
             if (known != null && known.verdict != Verdict.ACCEPT && time - known.at < negativeTtl) return@filter false
-            val assessment = ContentPolicy.classify(item, block)
+            val assessment = classify(item, block)
             if (assessment.verdict == Verdict.REJECT) stats.record(assessment)
             assessment.verdict != Verdict.REJECT
         }
         val wanted = first.indices.filter { i ->
-            !first[i].detailed && (ContentPolicy.classify(first[i], block).verdict == Verdict.AMBIGUOUS || needsMore(first[i], row))
+            !first[i].detailed && (classify(first[i], block).verdict == Verdict.AMBIGUOUS || needsMore(first[i], row))
         }.take(detailLimit)
         val enriched = first.toMutableList()
         wanted.chunked(10).forEach { chunk ->
             chunk.pmap { i -> i to enrich(first[i]) }.forEach { (i, item) -> enriched[i] = item }
         }
         return enriched.filter { item ->
-            val assessment = ContentPolicy.classify(item, block)
+            val assessment = classify(item, block)
             stats.record(assessment)
             // Remember an outcome only once the detail page was read, or the item is clearly fine.
             if (item.detailed || assessment.verdict == Verdict.ACCEPT) {

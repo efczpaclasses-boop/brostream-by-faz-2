@@ -16,6 +16,9 @@ class GayVidsSource : HtmlVideoSource() {
     override val reliability = 75
     override val speed = 65
 
+    override val tagSelector = ".info-content a[href*=\"/categories/\"], .info-content a[href*=\"/tags/\"]"
+    override val performerSelector = "a[href*=\"/models/\"]:not([href$=\"/models/\"])"
+
     override fun searchPath(query: String) = "/search/${Web.slug(query)}/"
 
     override fun pageUrl(page: Int, path: String): String =

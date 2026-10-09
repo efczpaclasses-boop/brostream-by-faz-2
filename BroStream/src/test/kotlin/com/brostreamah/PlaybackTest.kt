@@ -52,6 +52,16 @@ class PlaybackTest {
         assertEquals(0, StreamExtractor.qualityOf("https://c.example/video12345678.mp4"))
     }
 
+    @Test fun `player flashvars give urls with labels and skip the page-wide regex`() {
+        val html = """<script>var f = { video_url: 'https://c.example/get_file/1/90077.mp4/?tok=a', video_url_text: '480p',
+            video_alt_url: 'function/0/https://c.example/get_file/2/90077_hd.mp4/?tok=b', video_alt_url_text: '1080p' };
+            var pixel="https://c.example/get_file/9/pixel.mp4/";</script>"""
+        val streams = extract(html)
+        assertEquals(listOf(480, 1080), streams.map { it.quality })
+        assertEquals("https://c.example/get_file/2/90077_hd.mp4/?tok=b", streams[1].url)
+        assertEquals(2, streams.size)
+    }
+
     @Test fun `hls is recognised`() {
         val streams = extract("""<video><source src="https://c.example/master.m3u8" type="application/x-mpegURL"></video>""")
         assertTrue(streams.single().isHls)

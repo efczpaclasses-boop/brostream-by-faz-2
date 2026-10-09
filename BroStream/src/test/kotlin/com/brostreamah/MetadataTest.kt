@@ -39,6 +39,8 @@ class MetadataTest {
         assertEquals(754, Metadata.duration("12:34"))
         assertEquals(3723, Metadata.duration("1:02:03"))
         assertEquals(0, Metadata.duration("soon"))
+        assertEquals(780, Metadata.duration("13 min"))
+        assertEquals(3900, Metadata.duration("1 h 5 min"))
     }
 
     @Test fun `structured data supplies tags performers genders and stream`() {

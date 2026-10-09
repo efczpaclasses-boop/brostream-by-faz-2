@@ -65,6 +65,18 @@ class ContentPolicyTest {
         assertEquals(Verdict.AMBIGUOUS, ContentPolicy.classify(unclear).verdict)
     }
 
+    @Test fun `a gay-only site is weak evidence and only after its detail page was read`() {
+        val clean = item("Video 12345", tags = listOf("Amateur", "Solo")).copy(detailed = true)
+        assertEquals(Verdict.AMBIGUOUS, ContentPolicy.classify(clean).verdict)                       // trust off by default
+        assertEquals(Verdict.AMBIGUOUS, ContentPolicy.classify(clean.copy(detailed = false), siteDeclaresMaleOnly = true).verdict)
+        val weak = ContentPolicy.classify(clean, siteDeclaresMaleOnly = true)
+        assertEquals(Verdict.ACCEPT, weak.verdict)
+        assertTrue(weak.reason.startsWith("weak"))
+        // negative evidence always wins over the site's own claim
+        assertEquals(Verdict.REJECT, ContentPolicy.classify(clean.copy(tags = listOf("Solo", "Female")), siteDeclaresMaleOnly = true).verdict)
+        assertEquals(Verdict.REJECT, ContentPolicy.classify(clean.copy(genders = listOf("female")), siteDeclaresMaleOnly = true).verdict)
+    }
+
     @Test fun `positive tags make an unclear title acceptable`() {
         assertEquals(Verdict.ACCEPT, ContentPolicy.classify(item("Scene 12", tags = listOf("Gay", "Muscle"))).verdict)
         assertEquals(Verdict.ACCEPT, ContentPolicy.classify(item("Clip", description = "Gay men at the beach")).verdict)

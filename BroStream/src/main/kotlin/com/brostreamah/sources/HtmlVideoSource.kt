@@ -14,6 +14,10 @@ import org.jsoup.nodes.Element
 /** Shared scraping flow for sites that serve plain HTML listing and watch pages. */
 abstract class HtmlVideoSource : VideoSource {
     protected open val healthPath: String = "/"
+    /** Anchors that list THIS video's tags/categories. Site-wide menus must never match. */
+    protected open val tagSelector: String = ".tags a, .categories a"
+    /** Anchors that list THIS video's performers. */
+    protected open val performerSelector: String = "[itemprop=actor] [itemprop=name]"
     private val mapper = jacksonObjectMapper()
 
     protected abstract fun pageUrl(page: Int, path: String): String
@@ -28,7 +32,8 @@ abstract class HtmlVideoSource : VideoSource {
     protected fun withCardMeta(item: ItemData, card: Element): ItemData = item.copy(
         durationSec = Metadata.duration(card.selectFirst(".duration, .time, .length, [class*=duration]")?.text()),
         views = Metadata.count(card.selectFirst(".views, .view-count, [class*=views]")?.text()),
-        rating = Metadata.rating(card.selectFirst(".rating, .percent, [class*=rating]")?.text()),
+        rating = card.selectFirst(".star-on[style]")?.attr("style")?.let { Regex("width:\\s*(\\d+)%").find(it)?.groupValues?.get(1)?.toInt() }
+            ?: Metadata.rating(card.selectFirst(".rating, .percent, [class*=rating]")?.text()),
         uploadedAt = Metadata.time(
             card.selectFirst("time[datetime]")?.attr("datetime")
                 ?: card.selectFirst(".added, .date, .age, [class*=added], [class*=date]")?.text(),
@@ -43,13 +48,11 @@ abstract class HtmlVideoSource : VideoSource {
     override suspend fun details(item: ItemData): VideoDetails? {
         val doc = Web.document(item.url) ?: return null
         val structured = Metadata.structured(structuredBlocks(doc), mapper)
-        val tags = (structured.tags +
-            doc.select("a[href*=categories], a[href*=category], a[href*=/tag/], a[href*=/tags/], .tags a, .categories a").map { it.text() } +
-            doc.select("meta[property=video:tag]").map { it.attr("content") } +
-            doc.selectFirst("meta[name=keywords]")?.attr("content").orEmpty().split(','))
+        val keywords = doc.selectFirst("meta[name=keywords]")?.attr("content").orEmpty().split(',')
+        val tags = (structured.tags + doc.select(tagSelector).map { it.text() } +
+            doc.select("meta[property=video:tag]").map { it.attr("content") } + keywords)
             .map(String::trim).filter(String::isNotEmpty).distinct()
-        val performers = (structured.performers +
-            doc.select("a[href*=/pornstar], a[href*=/model], a[href*=/performer], a[href*=/stars/], [itemprop=actor] [itemprop=name]").map { it.text() } +
+        val performers = (structured.performers + doc.select(performerSelector).map { it.text() } +
             doc.select("meta[property=video:actor]").map { it.attr("content") })
             .map(String::trim).filter(String::isNotEmpty).distinct()
         val genders = (structured.genders +

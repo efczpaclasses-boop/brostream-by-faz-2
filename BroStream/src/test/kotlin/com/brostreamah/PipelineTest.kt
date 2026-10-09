@@ -20,6 +20,7 @@ class PipelineTest {
         override val baseUrl = "https://$prefix.example"
         override val reliability = 50
         override val speed = 50
+        override val declaresMaleOnly = false
         var detailCalls = 0
         override fun searchPath(query: String) = "/search"
         override suspend fun catalogue(page: Int, path: String) = if (page == 1) items[path].orEmpty() else emptyList()
@@ -73,6 +74,17 @@ class PipelineTest {
         assertEquals(listOf("Hot scene"), shown.map { it.title })
         assertTrue(p.quarantine.contains(unclear))
         assertFalse(p.quarantine.contains(clear))
+    }
+
+    @Test fun `a gay-only site is accepted only on weak evidence and never past contrary evidence`() = runBlocking {
+        val fine = video("T", 1, "Untitled clip")
+        val bad = video("T", 2, "Another clip")
+        class TrustingSource : VideoSource by FakeSource("T", mapOf("/" to listOf(fine, bad)), mapOf(
+            fine.url to VideoDetails("x", null, null, tags = listOf("Solo")),
+            bad.url to VideoDetails("x", null, null, tags = listOf("Solo", "Female")),
+        )) { override val declaresMaleOnly = true }
+        val shown = pipeline(TrustingSource()).loadRow(row(listOf(Feed("T", "/"))), 1)
+        assertEquals(listOf("Untitled clip"), shown.map { it.title })
     }
 
     @Test fun `detail page genders reject an item whose title looked fine`() = runBlocking {

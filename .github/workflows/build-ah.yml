@@ -49,6 +49,12 @@ jobs:
         run: |
           mkdir -p report
           python3 scripts/probe_sources.py > report/audit.json 2> report/audit-errors.txt || true
+      - name: Run the real pipeline against the live sites
+        continue-on-error: true
+        run: |
+          mkdir -p report
+          ./gradlew BroStreamByFazAH:testDebugUnitTest -Plive=true --tests '*LiveCatalogueTest*' --console=plain 2>&1 | tail -40 > report/live-run.txt || true
+          cp BroStream/build/live-report.txt report/live-report.txt || true
       - name: Release gate
         id: gate
         continue-on-error: true

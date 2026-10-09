@@ -102,7 +102,8 @@ def extract_streams(page: str, page_url: str) -> list[str]:
     declared += [clean(m) for m in re.findall(r'<video[^>]+src=["\']([^"\']+)', page, re.I)]
     structured = [clean(m) for m in re.findall(r'"contentUrl"\s*:\s*"([^"]+)"', page)]
     structured += [clean(m) for m in re.findall(r'<meta[^>]+property=["\']og:video(?::url|:secure_url)?["\'][^>]+content=["\']([^"\']+)', page, re.I)]
-    found = [u for u in declared + structured if re.search(r"\.(?:mp4|m3u8)", u, re.I)]
+    flashvars = [clean(re.sub(r"^function/\d+/", "", m)) for m in re.findall(r"video_(?:alt_)?url\d*\s*:\s*['\"]([^'\"]+)", page)]
+    found = [u for u in declared + structured + flashvars if re.search(r"\.(?:mp4|m3u8)", u, re.I)]
     if not found:
         found = [clean(m) for m in re.findall(r'https?[^"\'\s<>]+?\.mp4[^"\'\s<>]*', page, re.I)]
         found = [u for u in found if ".mp4.jpg" not in u]
@@ -135,18 +136,24 @@ def check_poster(url: str | None, label: str) -> str | None:
 
 
 def check_playback(prefix: str, detail_url: str) -> str | None:
+    """Passes if any stream on the page answers a byte-range request like a real video, as the app does."""
     try:
         page, _ = fetch(detail_url)
         streams = extract_streams(page.decode("utf-8", "ignore"), detail_url)
-        if not streams:
-            return f"{prefix}: no stream found on {detail_url}"
-        playable = [u for u in streams if ".m3u8" not in u]
-        if not playable:
-            return None  # adaptive playlist only; byte-range probe applies to MP4
-        fetch(playable[0], referer=detail_url, byte_range=True)
     except Exception as exc:  # noqa: BLE001
-        return f"{prefix}: playback check failed on {detail_url} ({exc})"
-    return None
+        return f"{prefix}: watch page failed {detail_url} ({exc})"
+    if not streams:
+        return f"{prefix}: no stream found on {detail_url}"
+    if all(".m3u8" in u for u in streams):
+        return None  # adaptive playlist only; the byte-range probe applies to MP4
+    errors = []
+    for url in (u for u in streams if ".m3u8" not in u):
+        try:
+            fetch(url, referer=detail_url, byte_range=True)
+            return None
+        except Exception as exc:  # noqa: BLE001
+            errors.append(str(exc))
+    return f"{prefix}: none of {len(errors)} stream(s) on {detail_url} passed a byte-range request ({'; '.join(errors)[:300]})"
 
 
 def run_live() -> tuple[list[str], list[str]]:

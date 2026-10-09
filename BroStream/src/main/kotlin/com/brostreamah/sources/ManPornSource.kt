@@ -16,6 +16,9 @@ class ManPornSource : HtmlVideoSource() {
     override val reliability = 80
     override val speed = 70
 
+    override val tagSelector = ".tags-list a"
+    override val performerSelector = "a[href*=\"/models/\"]:not([href$=\"/models/\"])"
+
     override fun searchPath(query: String) = "/search/?q=${Web.encode(query)}"
 
     override fun pageUrl(page: Int, path: String): String = when {
@@ -27,7 +30,9 @@ class ManPornSource : HtmlVideoSource() {
     override fun parseCards(doc: Document): List<ItemData> = doc.select("div.thumb").mapNotNull { el ->
         val a = el.selectFirst("a[href*=/videos/]") ?: return@mapNotNull null
         val image = el.selectFirst("img")
-        val title = image?.attr("alt").orEmpty().ifBlank { a.attr("title").ifBlank { a.text().trim() } }
+        // The image alt is cut short on this site; the heading's title attribute is the full name.
+        val title = el.selectFirst("h6[title]")?.attr("title").orEmpty()
+            .ifBlank { image?.attr("alt").orEmpty().ifBlank { a.attr("title").ifBlank { a.text().trim() } } }
         val href = Web.absolute(a.attr("href"), BASE_URL) ?: return@mapNotNull null
         if (title.isBlank()) return@mapNotNull null
         withCardMeta(

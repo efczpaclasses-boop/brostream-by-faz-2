@@ -17,6 +17,8 @@ interface VideoSource {
     val reliability: Int
     /** 0..100, relative loading speed. */
     val speed: Int
+    /** The site presents itself as gay-only. Counts as weak evidence, never as proof (see ContentPolicy). */
+    val declaresMaleOnly: Boolean get() = true
 
     fun searchPath(query: String): String
 

@@ -11,6 +11,19 @@ internal object StreamExtractor {
     private val embeddedMp4 = Regex("https?[^\\\"'\\s<>]+?\\.mp4[^\\\"'\\s<>]*", RegexOption.IGNORE_CASE)
     private val embeddedHls = Regex("https?[^\\\"'\\s<>]+?\\.m3u8[^\\\"'\\s<>]*", RegexOption.IGNORE_CASE)
 
+    /**
+     * KVS-style players list URLs as `video_url: '...'`, with an optional `video_url_text: '480p'` label and
+     * `video_alt_url`, `video_alt_url2`... for other qualities. Some sites prefix the URL with `function/0/`.
+     */
+    fun flashvars(html: String): List<Pair<String, Int>> =
+        Regex("""(video_(?:alt_)?url\d*)\s*:\s*['"]([^'"]+)['"]""").findAll(html).mapNotNull { match ->
+            val key = match.groupValues[1]
+            val url = clean(match.groupValues[2]).replace(Regex("^function/\\d+/"), "")
+            if (!isHttpUrl(url)) return@mapNotNull null
+            val label = Regex(key + """_text\s*:\s*['"]([^'"]*)['"]""").find(html)?.groupValues?.get(1)
+            url to qualityOf(label, url)
+        }.toList()
+
     /** "&amp;" and "&" show up in expiring tokens; a literal "&amp;" in a URL makes the signature fail. */
     fun clean(url: String): String =
         Parser.unescapeEntities(url, false)
@@ -47,7 +60,7 @@ internal object StreamExtractor {
             .map { it.attr("content") } + structured).mapNotNull { Web.absolute(clean(it), pageUrl) }
             .filter { it.contains(".mp4", true) || it.contains(".m3u8", true) }
             .map { it to qualityOf(it) }
-        var found = declared + meta
+        var found = declared + meta + flashvars(html)
         if (found.isEmpty()) {
             val text = html
             found = (embeddedMp4.findAll(text) + embeddedHls.findAll(text)).map { clean(it.value) }

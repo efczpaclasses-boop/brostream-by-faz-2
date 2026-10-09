@@ -88,7 +88,7 @@ internal object ContentPolicy {
 
     fun maleHit(text: String): String? = maleEvidence.find(text)?.value
 
-    fun classify(item: ItemData, blocklist: Blocklist = Blocklist.EMPTY): Assessment {
+    fun classify(item: ItemData, blocklist: Blocklist = Blocklist.EMPTY, siteDeclaresMaleOnly: Boolean = false): Assessment {
         if (item.url.isBlank() || item.title.isBlank()) return Assessment(Verdict.REJECT, "missing url or title")
         blocklist.blocks(item)?.let { return Assessment(Verdict.REJECT, it) }
 
@@ -115,6 +115,11 @@ internal object ContentPolicy {
         }
         item.description.takeIf(String::isNotBlank)?.let { text ->
             maleHit(text)?.let { return Assessment(Verdict.ACCEPT, "male evidence in description: $it") }
+        }
+        // Weak evidence: the site itself is a gay-only site. It never applies to an item whose detail page has not
+        // been read, and never overrides any negative evidence found above.
+        if (siteDeclaresMaleOnly && item.detailed && (item.tags.isNotEmpty() || item.description.isNotBlank())) {
+            return Assessment(Verdict.ACCEPT, "weak: gay-only site, detail page shows no contrary evidence")
         }
         return Assessment(Verdict.AMBIGUOUS, "no positive male evidence")
     }

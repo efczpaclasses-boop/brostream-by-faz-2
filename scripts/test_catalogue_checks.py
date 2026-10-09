@@ -54,6 +54,15 @@ class HealthCheckTests(unittest.TestCase):
         page = '<script type="application/ld+json">{"contentUrl":"https:\\/\\/c.example\\/v.mp4"}</script> "https://o.example/z.mp4"'
         self.assertEqual(["https://c.example/v.mp4"], health_check.extract_streams(page, "https://s.example/"))
 
+    def test_player_flashvars_are_found_and_the_pixel_is_ignored(self):
+        page = "var f={video_url: 'https://c.example/get_file/1/a.mp4/?t=1', video_alt_url: 'function/0/https://c.example/get_file/2/b.mp4/'}; var p='https://c.example/pixel.mp4';"
+        self.assertEqual(["https://c.example/get_file/1/a.mp4/?t=1", "https://c.example/get_file/2/b.mp4/"],
+                         health_check.extract_streams(page, "https://s.example/"))
+
+    def test_gayporntube_detail_links_come_from_anchors(self):
+        page = b'<div data-video-id="1"><a class="image image-ar" href="https://g.example/video/1/x" title="t"><img data-src="https://s.example/7.jpg"></a></div>'
+        self.assertEqual(["https://g.example/video/1/x"], health_check.detail_links("GPT", page, "https://g.example"))
+
     def test_regex_fallback_skips_thumbnails(self):
         page = 'var a="https://c.example/v.mp4"; var t="https://c.example/v.mp4.jpg";'
         self.assertEqual(["https://c.example/v.mp4"], health_check.extract_streams(page, "https://s.example/"))

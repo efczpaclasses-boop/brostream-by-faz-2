@@ -39,6 +39,10 @@ subprojects {
         setRepo(System.getenv("GITHUB_REPOSITORY") ?: "efczpaclasses-boop/brostream-by-faz-2")
     }
 
+    tasks.withType<Test> {
+        systemProperty("live", providers.gradleProperty("live").orNull ?: "")
+    }
+
     android {
         namespace = "com.brostreamah"
         defaultConfig {

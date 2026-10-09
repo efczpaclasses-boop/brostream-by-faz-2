@@ -74,6 +74,14 @@ internal object Metadata {
 
     /** "MM:SS" or "H:MM:SS" to seconds; 0 when absent or unparsable. */
     fun duration(text: String?): Int {
+        // "13 min", "45 sec", "1 h 5 min" as shown on some cards
+        val words = Regex("(\\d+)\\s*(h|hr|hour|min|m|sec|s)s?\\b", RegexOption.IGNORE_CASE).findAll(text.orEmpty()).toList()
+        if (words.isNotEmpty() && text?.contains(':') != true) {
+            return words.sumOf { m ->
+                val n = m.groupValues[1].toInt()
+                when (m.groupValues[2].lowercase(Locale.ROOT)) { "h", "hr", "hour" -> n * 3600; "min", "m" -> n * 60; else -> n }
+            }
+        }
         val parts = text?.trim()?.split(':')?.map { it.trim().toIntOrNull() ?: return 0 } ?: return 0
         return when (parts.size) {
             2 -> parts[0] * 60 + parts[1]
@@ -105,7 +113,7 @@ internal object Metadata {
             title = video.path("name").asText(""),
             description = video.path("description").asText(""),
             uploadedAt = time(video.path("uploadDate").asText(""), now),
-            views = count(views),
+            views = count(views ?: video.path("interactionCount").asText("").ifBlank { null }),
             rating = rating(video.path("aggregateRating").path("ratingValue").asText("")),
             tags = keywords,
             performers = actors.map { it.path("name").asText("") }.filter(String::isNotEmpty),

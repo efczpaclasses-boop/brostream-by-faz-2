@@ -16,6 +16,9 @@ class GayPornTubeSource : HtmlVideoSource() {
     override val reliability = 70
     override val speed = 60
 
+    override val tagSelector = ".tags a, .video-tags a, a[href*=\"/tags/\"]"
+    override val performerSelector = "a[href*=\"/pornstar/\"], a[href*=\"/model/\"]"
+
     override fun searchPath(query: String) = "/search/videos/${Web.slug(query)}/page1.html"
 
     override fun pageUrl(page: Int, path: String): String {
