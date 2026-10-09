@@ -17,6 +17,7 @@ MUST_PASS = (
     "every female case is rejected",
     "every lesbian case is rejected",
     "every bisexual or mixed case is rejected",
+    "every underage indicator is rejected even beside male words",
     "every male only case is accepted",
 )
 

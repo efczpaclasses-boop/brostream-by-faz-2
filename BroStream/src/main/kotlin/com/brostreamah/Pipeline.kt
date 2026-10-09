@@ -44,7 +44,7 @@ internal class Pipeline(
     private val blocklist: suspend () -> Blocklist = { Blocklist.EMPTY },
     val stats: PolicyStats = PolicyStats(),
     private val ownerOf: (ItemData) -> CategoryRow? = Rows::ownerOf,
-    private val trustSiteDeclaration: Boolean = true,
+    private val trustSiteDeclaration: Boolean = false,
 ) {
     private fun classify(item: ItemData, block: Blocklist): Assessment = ContentPolicy.classify(
         item, block, trustSiteDeclaration && sources.firstOrNull { it.id == item.source }?.declaresMaleOnly == true,

@@ -46,8 +46,8 @@ class PipelineTest {
         return item
     }
 
-    private fun pipeline(vararg sources: VideoSource, blocklist: Blocklist = Blocklist.EMPTY) = Pipeline(
-        sources.toList(), Deduplicator { null }, now = { now }, blocklist = { blocklist }, ownerOf = { null },
+    private fun pipeline(vararg sources: VideoSource, blocklist: Blocklist = Blocklist.EMPTY, trust: Boolean = false) = Pipeline(
+        sources.toList(), Deduplicator { null }, now = { now }, blocklist = { blocklist }, ownerOf = { null }, trustSiteDeclaration = trust,
     )
 
     private fun row(feeds: List<Feed>, topic: Topic? = null, sort: SortRule = SortRule.SOURCE_ORDER, window: Long = 0, min: Int = 1,
@@ -83,7 +83,7 @@ class PipelineTest {
             fine.url to VideoDetails("x", null, null, tags = listOf("Solo")),
             bad.url to VideoDetails("x", null, null, tags = listOf("Solo", "Female")),
         )) { override val declaresMaleOnly = true }
-        val shown = pipeline(TrustingSource()).loadRow(row(listOf(Feed("T", "/"))), 1)
+        val shown = pipeline(TrustingSource(), trust = true).loadRow(row(listOf(Feed("T", "/"))), 1)
         assertEquals(listOf("Untitled clip"), shown.map { it.title })
     }
 

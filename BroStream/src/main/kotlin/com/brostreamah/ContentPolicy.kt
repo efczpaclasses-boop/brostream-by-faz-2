@@ -33,7 +33,8 @@ internal object ContentPolicy {
         "lady", "ladies", "madam", "mistress", "dominatrix", "domme", "pussy", "vagina", "clit", "tits", "titty", "titties",
         "boobs", "boobies", "breasts", "busty", "bbw", "pregnant", "shemale", "she male", "trans", "transgender", "tranny",
         "tgirl", "t girl", "ladyboy", "futa", "schoolgirl", "cougar", "granny", "aunt", "auntie", "actress", "she", "her", "hers",
-        "herself", "nun", "teacher miss",
+        "herself", "nun", "teacher miss", "ts", "femboy", "femboys", "crossdresser", "crossdressers",
+        "cross dresser", "cross dressers", "trap", "traps", "sissy", "sissies",
     )
     private val femaleOther = wordRegex(
         // Spanish
@@ -76,6 +77,16 @@ internal object ContentPolicy {
         "brother", "brothers", "stepbro", "stepbrother", "stepdad", "stepson", "step bro", "step dad", "step son", "lad", "lads",
         "boyfriend", "boyfriends", "m/m", "hombres", "chicos", "homens", "garotos", "rapazes", "gay porn",
     )
+    /** Anything suggesting a minor is rejected outright, whatever else the item says. */
+    private val underage = Regex(
+        "$BEFORE(?:underage|under[\\s_-]+age|minor|minors|child|children|kid|kids|preteen|pre[\\s_-]+teen|loli|lolicon|shota|shotacon|" +
+            "jailbait|schoolboy|schoolboys|school[\\s_-]+boy|school[\\s_-]+boys|high[\\s_-]+school|middle[\\s_-]+school|elementary|" +
+            "kindergarten|toddler|infant|little[\\s_-]+boy|after[\\s_-]+school|(?:[0-9]|1[0-7])[\\s_-]*(?:yo|y/o|y\\.o\\.|yrs?|years?[\\s_-]*old))$AFTER",
+        RegexOption.IGNORE_CASE,
+    )
+
+    fun underageHit(text: String): String? = underage.find(text)?.value
+
     private val maleGenders = setOf("male", "m", "man", "men", "boy")
 
     fun femaleHit(text: String): String? {
@@ -101,6 +112,9 @@ internal object ContentPolicy {
             item.tags.forEach { add("tag" to it) }
             item.performers.forEach { add("performer" to it) }
             if (item.description.isNotBlank()) add("description" to item.description)
+        }
+        for ((kind, text) in fields) {
+            underageHit(text)?.let { return Assessment(Verdict.REJECT, "underage indicator in $kind: $it") }
         }
         for ((kind, text) in fields) {
             femaleHit(text)?.let { return Assessment(Verdict.REJECT, "female term in $kind: $it") }

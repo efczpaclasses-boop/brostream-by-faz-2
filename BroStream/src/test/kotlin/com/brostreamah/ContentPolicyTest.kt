@@ -38,6 +38,18 @@ class ContentPolicyTest {
         assertEquals(emptyList<String>(), leaks)
     }
 
+    @Test fun `every underage indicator is rejected even beside male words`() {
+        val leaks = cases.getValue("underage").filter { verdict(it) != Verdict.REJECT }
+        assertEquals(emptyList<String>(), leaks)
+        assertEquals(Verdict.REJECT, ContentPolicy.classify(item("Gay men scene", tags = listOf("Gay", "School Boy"))).verdict)
+        assertEquals(Verdict.REJECT, ContentPolicy.classify(item("Gay men scene", description = "he is 16 years old")).verdict)
+    }
+
+    @Test fun `adult ages and ordinary numbers are not mistaken for minors`() {
+        for (title in listOf("Gay guys 18 yo", "Two men 25 years old", "Gay men 1080p scene", "Gay guys 2017 compilation", "Men from class of 2005"))
+            assertEquals(title, Verdict.ACCEPT, verdict(title))
+    }
+
     @Test fun `every male only case is accepted`() {
         val missed = cases.getValue("maleOnly").filter { verdict(it) != Verdict.ACCEPT }
         assertEquals("male titles that were not accepted: $missed", emptyList<String>(), missed)
