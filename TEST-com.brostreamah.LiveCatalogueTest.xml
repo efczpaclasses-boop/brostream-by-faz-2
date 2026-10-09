@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.brostreamah.LiveCatalogueTest" tests="1" skipped="1" failures="0" errors="0" timestamp="2026-10-09T15:56:29" hostname="runnervmmprz5" time="0.003">
+  <properties/>
+  <testcase name="report what every row shows" classname="com.brostreamah.LiveCatalogueTest" time="0.003">
+    <skipped/>
+  </testcase>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

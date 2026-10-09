@@ -1,0 +1,6 @@
+INFO TinyURL is not configured in release/links.json; short-link check skipped
+INFO worst per-page duplicate ratio: 0.00 (limit 0.35)
+INFO GPT: detail page, stream and byte-range request passed
+INFO GV: detail page, stream and byte-range request passed
+INFO MP: detail page, stream and byte-range request passed
+Release gate passed.

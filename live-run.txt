@@ -1,0 +1,24 @@
+> Task :BroStreamByFazAH:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :BroStreamByFazAH:preBuild UP-TO-DATE
+> Task :BroStreamByFazAH:preDebugBuild UP-TO-DATE
+> Task :BroStreamByFazAH:generateDebugResValues UP-TO-DATE
+> Task :BroStreamByFazAH:generateDebugResources UP-TO-DATE
+> Task :BroStreamByFazAH:packageDebugResources UP-TO-DATE
+> Task :BroStreamByFazAH:parseDebugLocalResources UP-TO-DATE
+> Task :BroStreamByFazAH:generateDebugRFile UP-TO-DATE
+> Task :BroStreamByFazAH:compileDebugKotlin UP-TO-DATE
+> Task :BroStreamByFazAH:javaPreCompileDebug UP-TO-DATE
+> Task :BroStreamByFazAH:compileDebugJavaWithJavac NO-SOURCE
+> Task :BroStreamByFazAH:bundleLibRuntimeToJarDebug UP-TO-DATE
+> Task :BroStreamByFazAH:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :BroStreamByFazAH:preDebugUnitTestBuild UP-TO-DATE
+> Task :BroStreamByFazAH:generateDebugUnitTestStubRFile UP-TO-DATE
+> Task :BroStreamByFazAH:compileDebugUnitTestKotlin UP-TO-DATE
+> Task :BroStreamByFazAH:javaPreCompileDebugUnitTest UP-TO-DATE
+> Task :BroStreamByFazAH:compileDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :BroStreamByFazAH:processDebugJavaRes UP-TO-DATE
+> Task :BroStreamByFazAH:processDebugUnitTestJavaRes UP-TO-DATE
+> Task :BroStreamByFazAH:testDebugUnitTest
+
+BUILD SUCCESSFUL in 3m 2s
+15 actionable tasks: 1 executed, 14 up-to-date

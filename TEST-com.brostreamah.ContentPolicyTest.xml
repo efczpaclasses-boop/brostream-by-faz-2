@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.brostreamah.ContentPolicyTest" tests="16" skipped="0" failures="0" errors="0" timestamp="2026-10-09T15:56:28" hostname="runnervmmprz5" time="0.186">
+  <properties/>
+  <testcase name="a dedicated gay site is not trusted without evidence" classname="com.brostreamah.ContentPolicyTest" time="0.148"/>
+  <testcase name="every lesbian case is rejected" classname="com.brostreamah.ContentPolicyTest" time="0.003"/>
+  <testcase name="dataset is large enough to mean something" classname="com.brostreamah.ContentPolicyTest" time="0.002"/>
+  <testcase name="every male only case is accepted" classname="com.brostreamah.ContentPolicyTest" time="0.003"/>
+  <testcase name="adult ages and ordinary numbers are not mistaken for minors" classname="com.brostreamah.ContentPolicyTest" time="0.002"/>
+  <testcase name="female metadata rejects an otherwise male title" classname="com.brostreamah.ContentPolicyTest" time="0.002"/>
+  <testcase name="a gay-only site is weak evidence and only after its detail page was read" classname="com.brostreamah.ContentPolicyTest" time="0.002"/>
+  <testcase name="ambiguous titles are never accepted and never rejected" classname="com.brostreamah.ContentPolicyTest" time="0.002"/>
+  <testcase name="quarantine is bounded and releasable" classname="com.brostreamah.ContentPolicyTest" time="0.002"/>
+  <testcase name="every female case is rejected" classname="com.brostreamah.ContentPolicyTest" time="0.003"/>
+  <testcase name="every bisexual or mixed case is rejected" classname="com.brostreamah.ContentPolicyTest" time="0.003"/>
+  <testcase name="words inside other words do not count" classname="com.brostreamah.ContentPolicyTest" time="0.001"/>
+  <testcase name="positive tags make an unclear title acceptable" classname="com.brostreamah.ContentPolicyTest" time="0.002"/>
+  <testcase name="blocklist rejects by id and by term" classname="com.brostreamah.ContentPolicyTest" time="0.006"/>
+  <testcase name="every underage indicator is rejected even beside male words" classname="com.brostreamah.ContentPolicyTest" time="0.001"/>
+  <testcase name="declared performer genders decide" classname="com.brostreamah.ContentPolicyTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

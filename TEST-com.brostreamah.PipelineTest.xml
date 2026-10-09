@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.brostreamah.PipelineTest" tests="15" skipped="0" failures="0" errors="0" timestamp="2026-10-09T15:56:29" hostname="runnervmmprz5" time="0.062">
+  <properties/>
+  <testcase name="a gay-only site is accepted only on weak evidence and never past contrary evidence" classname="com.brostreamah.PipelineTest" time="0.031"/>
+  <testcase name="a row with too few verified videos is hidden" classname="com.brostreamah.PipelineTest" time="0.002"/>
+  <testcase name="amateur results from several providers are combined ranked and deduplicated" classname="com.brostreamah.PipelineTest" time="0.005"/>
+  <testcase name="female items never reach the screen" classname="com.brostreamah.PipelineTest" time="0.001"/>
+  <testcase name="detail page genders reject an item whose title looked fine" classname="com.brostreamah.PipelineTest" time="0.002"/>
+  <testcase name="inspected unclear videos are not fetched again" classname="com.brostreamah.PipelineTest" time="0.002"/>
+  <testcase name="a row without timestamps is hidden instead of faking freshness" classname="com.brostreamah.PipelineTest" time="0.002"/>
+  <testcase name="an unclear title is shown only after its detail page proves it" classname="com.brostreamah.PipelineTest" time="0.002"/>
+  <testcase name="New Today shows only recent uploads newest first" classname="com.brostreamah.PipelineTest" time="0.003"/>
+  <testcase name="stats record why items were rejected" classname="com.brostreamah.PipelineTest" time="0.001"/>
+  <testcase name="search applies the same policy" classname="com.brostreamah.PipelineTest" time="0.002"/>
+  <testcase name="expiring cache drops old entries" classname="com.brostreamah.PipelineTest" time="0.001"/>
+  <testcase name="blocklist removes videos without a new release" classname="com.brostreamah.PipelineTest" time="0.001"/>
+  <testcase name="fallback providers fill a short row" classname="com.brostreamah.PipelineTest" time="0.003"/>
+  <testcase name="Popular This Week ranks by views within the window" classname="com.brostreamah.PipelineTest" time="0.003"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

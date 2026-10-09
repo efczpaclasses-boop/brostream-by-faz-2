@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.brostreamah.CatalogueReliabilityTest" tests="29" skipped="0" failures="0" errors="0" timestamp="2026-10-09T15:56:28" hostname="runnervmmprz5" time="0.154">
+  <properties/>
+  <testcase name="later pages do not repeat earlier pages of the same row" classname="com.brostreamah.CatalogueReliabilityTest" time="0.062"/>
+  <testcase name="row ownership depends only on the item" classname="com.brostreamah.CatalogueReliabilityTest" time="0.035"/>
+  <testcase name="no row heading claims popularity the sort does not provide" classname="com.brostreamah.CatalogueReliabilityTest" time="0.01"/>
+  <testcase name="slightly renamed copies match by similarity" classname="com.brostreamah.CatalogueReliabilityTest" time="0.002"/>
+  <testcase name="result does not depend on input order" classname="com.brostreamah.CatalogueReliabilityTest" time="0.006"/>
+  <testcase name="MyVidster is gone" classname="com.brostreamah.CatalogueReliabilityTest" time="0.002"/>
+  <testcase name="shared performer lowers the title threshold" classname="com.brostreamah.CatalogueReliabilityTest" time="0.001"/>
+  <testcase name="candidates beyond the limit are not remembered" classname="com.brostreamah.CatalogueReliabilityTest" time="0.003"/>
+  <testcase name="signed playback URLs retain their query strings" classname="com.brostreamah.CatalogueReliabilityTest" time="0.002"/>
+  <testcase name="unrelated titles stay separate" classname="com.brostreamah.CatalogueReliabilityTest" time="0.001"/>
+  <testcase name="reloading a page does not hide it" classname="com.brostreamah.CatalogueReliabilityTest" time="0.004"/>
+  <testcase name="homemade means self made and not studio" classname="com.brostreamah.CatalogueReliabilityTest" time="0.001"/>
+  <testcase name="rows are independent of one another" classname="com.brostreamah.CatalogueReliabilityTest" time="0.001"/>
+  <testcase name="blowjob compilations are separate from ordinary blowjobs" classname="com.brostreamah.CatalogueReliabilityTest" time="0.0"/>
+  <testcase name="shared thumbnail and a related title match" classname="com.brostreamah.CatalogueReliabilityTest" time="0.001"/>
+  <testcase name="similar titles with different durations stay separate" classname="com.brostreamah.CatalogueReliabilityTest" time="0.003"/>
+  <testcase name="malformed and non network URLs are rejected" classname="com.brostreamah.CatalogueReliabilityTest" time="0.0"/>
+  <testcase name="ordinary failures are handled while cancellation propagates" classname="com.brostreamah.CatalogueReliabilityTest" time="0.0"/>
+  <testcase name="best copy wins by resolution then reliability then speed" classname="com.brostreamah.CatalogueReliabilityTest" time="0.006"/>
+  <testcase name="every provider uses its own base URL" classname="com.brostreamah.CatalogueReliabilityTest" time="0.0"/>
+  <testcase name="same canonical ID is collapsed even when the title changes" classname="com.brostreamah.CatalogueReliabilityTest" time="0.0"/>
+  <testcase name="failed callback does not count as success" classname="com.brostreamah.CatalogueReliabilityTest" time="0.001"/>
+  <testcase name="Brazilian and Latino rows need tags or description not a lone title word" classname="com.brostreamah.CatalogueReliabilityTest" time="0.0"/>
+  <testcase name="no callback means resolver failure" classname="com.brostreamah.CatalogueReliabilityTest" time="0.0"/>
+  <testcase name="studio prefixes resolution labels and punctuation are ignored" classname="com.brostreamah.CatalogueReliabilityTest" time="0.001"/>
+  <testcase name="same video on different providers is detected" classname="com.brostreamah.CatalogueReliabilityTest" time="0.001"/>
+  <testcase name="every row feed points at a known source prefix" classname="com.brostreamah.CatalogueReliabilityTest" time="0.001"/>
+  <testcase name="canonical id uses the numeric ID within a provider" classname="com.brostreamah.CatalogueReliabilityTest" time="0.0"/>
+  <testcase name="invalid and repeated URLs are not delivered" classname="com.brostreamah.CatalogueReliabilityTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

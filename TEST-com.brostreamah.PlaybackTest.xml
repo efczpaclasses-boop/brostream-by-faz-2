@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.brostreamah.PlaybackTest" tests="13" skipped="0" failures="0" errors="0" timestamp="2026-10-09T15:56:29" hostname="runnervmmprz5" time="0.072">
+  <properties/>
+  <testcase name="quality hints are read from attributes and names" classname="com.brostreamah.PlaybackTest" time="0.001"/>
+  <testcase name="hls is recognised" classname="com.brostreamah.PlaybackTest" time="0.048"/>
+  <testcase name="hls needs a playlist header" classname="com.brostreamah.PlaybackTest" time="0.001"/>
+  <testcase name="duplicate qualities collapse and labels are accurate" classname="com.brostreamah.PlaybackTest" time="0.003"/>
+  <testcase name="a server that ignores range is playable but not seekable" classname="com.brostreamah.PlaybackTest" time="0.001"/>
+  <testcase name="declared sources are used before the broad regex" classname="com.brostreamah.PlaybackTest" time="0.001"/>
+  <testcase name="html error pages and expired links are not playable" classname="com.brostreamah.PlaybackTest" time="0.001"/>
+  <testcase name="entities in signed URLs are decoded" classname="com.brostreamah.PlaybackTest" time="0.0"/>
+  <testcase name="regex is the last resort and skips thumbnails" classname="com.brostreamah.PlaybackTest" time="0.007"/>
+  <testcase name="seekable or adaptive streams are offered first then higher quality" classname="com.brostreamah.PlaybackTest" time="0.001"/>
+  <testcase name="a real MP4 range response is playable and seekable" classname="com.brostreamah.PlaybackTest" time="0.0"/>
+  <testcase name="structured data is used before the regex" classname="com.brostreamah.PlaybackTest" time="0.004"/>
+  <testcase name="player flashvars give urls with labels and skip the page-wide regex" classname="com.brostreamah.PlaybackTest" time="0.004"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

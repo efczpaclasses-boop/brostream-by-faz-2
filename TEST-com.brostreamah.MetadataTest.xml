@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.brostreamah.MetadataTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-09T15:56:29" hostname="runnervmmprz5" time="0.013">
+  <properties/>
+  <testcase name="relative times count back from now" classname="com.brostreamah.MetadataTest" time="0.001"/>
+  <testcase name="ISO dates honour their offset" classname="com.brostreamah.MetadataTest" time="0.003"/>
+  <testcase name="durations parse minutes and hours" classname="com.brostreamah.MetadataTest" time="0.006"/>
+  <testcase name="ratings normalise to 0 to 100" classname="com.brostreamah.MetadataTest" time="0.001"/>
+  <testcase name="structured data supplies tags performers genders and stream" classname="com.brostreamah.MetadataTest" time="0.001"/>
+  <testcase name="view counts understand suffixes and separators" classname="com.brostreamah.MetadataTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
