@@ -29,7 +29,12 @@ def load_rows(rows_file: Path = PACKAGE / "Rows.kt") -> list[Row]:
         head = re.match(r'"([^"]+)",\s*"([^"]+)"', chunk)
         if not head:
             raise ValueError(f"cannot read a category row: {chunk[:60]!r}")
-        feeds = tuple(re.findall(r'feed\("(\w+)",\s*"([^"]+)"\)', chunk))
+        feeds = list(re.findall(r'feed\("(\w+)",\s*"([^"]+)"\)', chunk))
+        for term in re.findall(r'searchFeeds\("([^"]+)"\)', chunk):
+            slug = re.sub(r"[^a-z0-9]+", "-", term.lower().strip()).strip("-")
+            feeds += [("MP", f"/search/?q={term.strip().replace(' ', '+')}"), ("GV", f"/search/{slug}/"),
+                      ("GPT", f"/search/videos/{slug}/page1.html")]
+        feeds = tuple(feeds)
         if not feeds:
             raise ValueError(f"row {head[1]} has no feeds")
         minimum = re.search(r"minItems\s*=\s*(\d+)", chunk)

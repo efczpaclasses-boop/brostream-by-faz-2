@@ -41,6 +41,7 @@ subprojects {
 
     tasks.withType<Test> {
         systemProperty("live", providers.gradleProperty("live").orNull ?: "")
+        systemProperty("liverows", providers.gradleProperty("liveRows").orNull ?: "")
     }
 
     android {

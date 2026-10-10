@@ -13,6 +13,13 @@ Any one of these:
 3. **ADB**: `adb connect <tv-ip>:5555` then `adb install -r BroStreamAH.apk`.
 Allow "Install unknown apps" for the app you use when Android asks.
 
+## What is in 1.1
+- **New Videos** and **Hot Videos** are always the first two rows (real upload times and view counts).
+- **Categories** screen: big tiles with an emoji and a name (45+ categories). OK opens one; hold OK adds or removes it from Home.
+- Home shows the categories you chose. Videos you have seen move down and unseen ones are shuffled to the front;
+  rows refresh themselves every 15 minutes and there is a Refresh button.
+- Sound: audio focus, decoder fallback, and a stream with no playable audio is skipped for the next quality.
+
 ## Using it
 - Up/Down move between rows, Left/Right move along a row. OK plays. **Hold OK** on a video to hide it for good.
 - In the player: OK shows the controls, Left/Right seek, Back leaves. If a stream fails it tries the next quality.

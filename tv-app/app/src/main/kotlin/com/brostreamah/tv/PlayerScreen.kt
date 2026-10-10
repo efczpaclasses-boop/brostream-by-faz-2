@@ -25,11 +25,15 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.media3.common.AudioAttributes
+import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
+import androidx.media3.common.Tracks
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DefaultHttpDataSource
+import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.hls.HlsMediaSource
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
@@ -88,7 +92,15 @@ private fun VideoPlayer(streams: List<PlayableStream>, referer: String, onFailed
     val context = LocalContext.current
     var index by remember { mutableIntStateOf(0) }
     var controlsVisible by remember { mutableStateOf(true) }
-    val player = remember { ExoPlayer.Builder(context).build() }
+    var noSound by remember { mutableStateOf(false) }
+    val player = remember {
+        // Sound: take audio focus as a movie, fall back to another decoder if the first cannot play the track,
+        // and make sure the volume is not left low.
+        ExoPlayer.Builder(context, DefaultRenderersFactory(context).setEnableDecoderFallback(true))
+            .setAudioAttributes(AudioAttributes.Builder().setUsage(C.USAGE_MEDIA).setContentType(C.AUDIO_CONTENT_TYPE_MOVIE).build(), true)
+            .setHandleAudioBecomingNoisy(true)
+            .build().apply { volume = 1f }
+    }
     val dataSource = remember(referer) {
         DefaultHttpDataSource.Factory().setUserAgent(Web.USER_AGENT).setAllowCrossProtocolRedirects(true)
             .setDefaultRequestProperties(mapOf("Referer" to referer))
@@ -99,6 +111,17 @@ private fun VideoPlayer(streams: List<PlayableStream>, referer: String, onFailed
             // A link that stops working falls back to the next quality instead of ending playback.
             override fun onPlayerError(error: PlaybackException) {
                 if (index + 1 < streams.size) index += 1 else onFailed()
+            }
+
+            // A stream whose video plays but whose audio cannot (missing, or a codec this box lacks) is skipped
+            // for another quality; if none has sound the viewer is told instead of left guessing.
+            override fun onTracksChanged(tracks: Tracks) {
+                val hasVideo = tracks.isTypeSupported(C.TRACK_TYPE_VIDEO)
+                if (hasVideo && !tracks.isTypeSelected(C.TRACK_TYPE_AUDIO)) {
+                    if (index + 1 < streams.size) index += 1 else noSound = true
+                } else if (tracks.isTypeSelected(C.TRACK_TYPE_AUDIO)) {
+                    noSound = false
+                }
             }
         }
         player.addListener(listener)
@@ -131,6 +154,10 @@ private fun VideoPlayer(streams: List<PlayableStream>, referer: String, onFailed
             },
             modifier = Modifier.fillMaxSize(),
         )
+        if (noSound) {
+            Text("🔇 This video has no sound that this box can play.", fontSize = 15.sp, color = Color.White,
+                modifier = Modifier.align(Alignment.TopStart).padding(24.dp).background(Color(0xCC000000)).padding(10.dp))
+        }
         if (streams.size > 1 && controlsVisible) {
             Row(Modifier.align(Alignment.TopEnd).padding(24.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 streams.forEachIndexed { i, s ->

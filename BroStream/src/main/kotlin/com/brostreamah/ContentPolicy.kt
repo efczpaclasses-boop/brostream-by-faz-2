@@ -80,7 +80,7 @@ internal object ContentPolicy {
     /** Anything suggesting a minor is rejected outright, whatever else the item says. */
     private val underage = Regex(
         "$BEFORE(?:underage|under[\\s_-]+age|minor|minors|child|children|kid|kids|preteen|pre[\\s_-]+teen|loli|lolicon|shota|shotacon|" +
-            "jailbait|schoolboy|schoolboys|school[\\s_-]+boy|school[\\s_-]+boys|high[\\s_-]+school|middle[\\s_-]+school|elementary|" +
+            "jailbait|teen|teens|teenage|teenager|teenagers|young[\\s_-]+boy|young[\\s_-]+boys|barely[\\s_-]+legal|schoolboy|schoolboys|school[\\s_-]+boy|school[\\s_-]+boys|high[\\s_-]+school|middle[\\s_-]+school|elementary|" +
             "kindergarten|toddler|infant|little[\\s_-]+boy|after[\\s_-]+school|(?:[0-9]|1[0-7])[\\s_-]*(?:yo|y/o|y\\.o\\.|yrs?|years?[\\s_-]*old))$AFTER",
         RegexOption.IGNORE_CASE,
     )

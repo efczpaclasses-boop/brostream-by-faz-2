@@ -60,10 +60,25 @@ internal class CategoryRow(
     val minItems: Int = 8,
 ) {
     val hasWindow get() = windowMillis > 0
+    /** Leading symbol(s) of the title, e.g. "🔥"; every title starts with one. */
+    val emoji: String get() = title.takeWhile { !it.isLetterOrDigit() }.trim().ifEmpty { "🎬" }
+    /** The title without its emoji, e.g. "PNP & Slam". */
+    val name: String get() = title.dropWhile { !it.isLetterOrDigit() }.trim()
+    /** New Videos and Hot Videos: always on top of Home and not part of the category list. */
+    val special: Boolean get() = hasWindow
 }
 
 private fun feed(prefix: String, path: String) = Feed(prefix, path)
 private const val DAY = 86_400_000L
+
+private fun slugOf(term: String) = term.lowercase().trim().replace(Regex("[^a-z0-9]+"), "-").trim('-')
+
+/** The same search on every source, so a category fills from all of them. */
+private fun searchFeeds(term: String): List<Feed> = listOf(
+    feed("MP", "/search/?q=${term.trim().replace(' ', '+')}"),
+    feed("GV", "/search/${slugOf(term)}/"),
+    feed("GPT", "/search/videos/${slugOf(term)}/page1.html"),
+)
 
 private val oral = wordRegex("blowjob", "blowjobs", "blow job", "suck", "sucking", "sucked", "oral", "deepthroat", "deep throat", "head", "cocksucking", "cocksucker")
 private val compilation = wordRegex("compilation", "compilations", "compil", "best of", "megamix", "mega mix", "collection", "supercut", "mix", "top 10", "top 20")
@@ -96,13 +111,13 @@ private val party = wordRegex("party", "parties", "sauna", "club", "festival")
 
 internal object Rows {
     val all: List<CategoryRow> = listOf(
-        // Real time-based rows first: they only fill when the sources expose upload times and view counts.
-        CategoryRow("ALL|new-today", "🆕 New Today",
+        // Time-based rows first: they only fill from real upload times and view counts.
+        CategoryRow("ALL|new", "🆕 New Videos",
             listOf(feed("MP", "/"), feed("GV", "/"), feed("GPT", "/")),
-            sort = SortRule.NEWEST, windowMillis = DAY, minItems = 6),
-        CategoryRow("ALL|popular-week", "📈 Popular This Week",
+            sort = SortRule.NEWEST, windowMillis = 14 * DAY, minItems = 6),
+        CategoryRow("ALL|hot", "🔥 Hot Videos",
             listOf(feed("MP", "/"), feed("GV", "/"), feed("GPT", "/")),
-            sort = SortRule.MOST_VIEWED, windowMillis = 7 * DAY, minItems = 6),
+            sort = SortRule.MOST_VIEWED, windowMillis = 30 * DAY, minItems = 6),
         CategoryRow("MP|/", "🎬 Gay Men", listOf(feed("MP", "/")), fallbackQuery = "gay men"),
         CategoryRow("GV|/", "🎞️ Gay Videos", listOf(feed("GV", "/")), fallbackQuery = "gay men"),
 
@@ -144,36 +159,87 @@ internal object Rows {
         CategoryRow("MP|/categories/latino/", "🌶️ Latino Men",
             listOf(feed("MP", "/categories/latino/")),
             Topic(any = latino, minScore = 3), fallbackQuery = "latino men"),
-        CategoryRow("GV|/categories/interracial/", "Interracial Men", listOf(feed("GV", "/categories/interracial/")),
+        CategoryRow("GV|/categories/interracial/", "🤝 Interracial Men", listOf(feed("GV", "/categories/interracial/")),
             Topic(any = interracial), fallbackQuery = "gay interracial"),
-        CategoryRow("MP|/categories/asian/", "Asian Men", listOf(feed("MP", "/categories/asian/")),
+        CategoryRow("MP|/categories/asian/", "🏯 Asian Men", listOf(feed("MP", "/categories/asian/")),
             Topic(any = asian), fallbackQuery = "asian gay men"),
+        // More categories. Each reads the same search on every source and keeps what fits its words.
+        CategoryRow("ALL|twink", "🍑 Twinks", searchFeeds("twink"),
+            Topic(any = wordRegex("twink", "twinks", "twunk", "twinkie")), SortRule.RANKED, "twink"),
+        CategoryRow("ALL|bear", "🐻 Bears & Cubs", searchFeeds("bear"),
+            Topic(any = wordRegex("bear", "bears", "cub", "cubs", "chubby", "chub", "burly")), SortRule.RANKED, "bear"),
+        CategoryRow("ALL|daddy", "👨 Daddies & Mature", searchFeeds("daddy"),
+            Topic(any = wordRegex("daddy", "daddies", "dad", "mature", "older man", "silver fox", "silverdaddy")), SortRule.RANKED, "daddy"),
+        CategoryRow("ALL|hunk", "🏋️ Hunks", searchFeeds("hunk"),
+            Topic(any = wordRegex("hunk", "hunks", "stud", "studs", "alpha")), SortRule.RANKED, "hunk"),
+        CategoryRow("ALL|uncut", "✂️ Uncut", searchFeeds("uncut"),
+            Topic(any = wordRegex("uncut", "uncircumcised", "foreskin")), SortRule.RANKED, "uncut"),
+        CategoryRow("ALL|anal", "🍑 Anal", searchFeeds("gay anal"),
+            Topic(any = wordRegex("anal", "ass fuck", "assfuck", "ass fucking", "fucks ass")), SortRule.RANKED, "gay anal"),
+        CategoryRow("ALL|rimming", "👅 Rimming", searchFeeds("rimming"),
+            Topic(any = wordRegex("rimming", "rimjob", "rim job", "eat ass", "eating ass", "ass licking", "ass eating")), SortRule.RANKED, "rimming"),
+        CategoryRow("ALL|threesome", "👥 Threesomes", searchFeeds("gay threesome"),
+            Topic(any = wordRegex("threesome", "3some", "three some", "3 way", "3-way", "threeway", "three way")), SortRule.RANKED, "gay threesome"),
+        CategoryRow("ALL|kissing", "💋 Kissing & Romance", searchFeeds("gay kissing"),
+            Topic(any = wordRegex("kissing", "kiss", "kisses", "romantic", "romance", "sensual", "passionate", "making love", "lovemaking", "cuddle")), SortRule.RANKED, "gay kissing"),
+        CategoryRow("ALL|fetish", "⛓️ Fetish & Leather", searchFeeds("gay leather"),
+            Topic(any = wordRegex("leather", "fetish", "bdsm", "bondage", "jockstrap", "latex", "rubber", "harness", "kinky")), SortRule.RANKED, "gay leather"),
+        CategoryRow("ALL|uniform", "🪖 Military & Uniform", searchFeeds("gay military"),
+            Topic(any = wordRegex("military", "soldier", "soldiers", "army", "navy", "marine", "uniform", "cop", "police", "firefighter", "sailor")), SortRule.RANKED, "gay military"),
+        CategoryRow("ALL|massage", "💆 Massage", searchFeeds("gay massage"),
+            Topic(any = wordRegex("massage", "masseur", "masseurs", "oil massage")), SortRule.RANKED, "gay massage"),
+        CategoryRow("ALL|shower", "🚿 Shower & Bath", searchFeeds("gay shower"),
+            Topic(any = wordRegex("shower", "showers", "bath", "bathroom", "bathing", "jacuzzi", "hot tub", "pool")), SortRule.RANKED, "gay shower"),
+        CategoryRow("ALL|sports", "🏈 Locker Room & Sports", searchFeeds("gay locker room"),
+            Topic(any = wordRegex("locker room", "locker", "gym", "wrestling", "soccer", "swimming", "swimmer", "boxing")), SortRule.RANKED, "gay locker room"),
+        CategoryRow("ALL|hairy", "🧔 Hairy", searchFeeds("hairy"),
+            Topic(any = wordRegex("hairy", "furry", "beard", "bearded")), SortRule.RANKED, "hairy"),
+        CategoryRow("ALL|black", "🖤 Black Men", searchFeeds("black guy"),
+            Topic(any = wordRegex("black men", "black guy", "black guys", "black man", "ebony", "african", "bbc")), SortRule.RANKED, "black guy"),
+        CategoryRow("ALL|arab", "🕌 Arab & Middle Eastern", searchFeeds("arab"),
+            Topic(any = wordRegex("arab", "arabic", "arabian", "middle eastern", "turkish", "persian", "iranian", "egyptian", "lebanese", "saudi", "dubai")), SortRule.RANKED, "arab"),
+        CategoryRow("ALL|indian", "🛕 Indian & Desi", searchFeeds("indian"),
+            Topic(any = wordRegex("indian", "desi", "bangladeshi", "pakistani", "nepali", "sri lankan")), SortRule.RANKED, "indian"),
+        CategoryRow("ALL|european", "🏰 European", searchFeeds("european"),
+            Topic(any = wordRegex("european", "russian", "german", "czech", "french", "italian", "british", "english", "ukrainian", "polish", "romanian", "hungarian")), SortRule.RANKED, "european"),
+        CategoryRow("ALL|pinoy", "🌴 Pinoy & Southeast Asian", searchFeeds("pinoy"),
+            Topic(any = wordRegex("pinoy", "filipino", "thai", "vietnamese", "indonesian", "malaysian")), SortRule.RANKED, "pinoy"),
+        CategoryRow("ALL|feet", "🦶 Feet", searchFeeds("gay feet"),
+            Topic(any = wordRegex("feet", "foot", "foot fetish", "toes", "sock", "socks")), SortRule.RANKED, "gay feet"),
+        CategoryRow("ALL|car", "🚗 In the Car", searchFeeds("gay car"),
+            Topic(any = wordRegex("car", "cars", "backseat", "back seat", "taxi", "truck")), SortRule.RANKED, "gay car"),
+        CategoryRow("ALL|office", "🏢 Office & Work", searchFeeds("gay office"),
+            Topic(any = wordRegex("office", "boss", "workplace", "coworker", "colleague", "business")), SortRule.RANKED, "gay office"),
+        CategoryRow("ALL|roommates", "🏠 Roommates & Neighbors", searchFeeds("gay roommate"),
+            Topic(any = wordRegex("roommate", "roommates", "flatmate", "neighbor", "neighbors", "neighbour", "neighbours")), SortRule.RANKED, "gay roommate"),
+        CategoryRow("ALL|toys", "🧰 Toys", searchFeeds("gay toys"),
+            Topic(any = wordRegex("toy", "toys", "dildo", "vibrator", "fleshlight", "butt plug", "plug")), SortRule.RANKED, "gay toys"),
         CategoryRow("GPT|/search/videos/pnp-slam/page1.html", "🔥 PNP & Slam",
             listOf(feed("GPT", "/search/videos/pnp-slam/page1.html")), Topic(any = pnp), fallbackQuery = "pnp slam"),
         CategoryRow("GV|/categories/party/", "🎉 Party & Group Play",
             listOf(feed("GV", "/categories/party/")), Topic(any = party), fallbackQuery = "gay party"),
-        CategoryRow("GV|/search/straight-curious-guys/", "Straight & Curious Guys",
+        CategoryRow("GV|/search/straight-curious-guys/", "🧢 Straight & Curious Guys",
             listOf(feed("GV", "/search/straight-curious-guys/")),
             Topic(allOf = listOf(experiment)), fallbackQuery = "straight curious gay men"),
         CategoryRow("MP|/categories/muscle/", "💪 Muscle Men", listOf(feed("MP", "/categories/muscle/")),
             Topic(any = muscle), fallbackQuery = "muscle men"),
         CategoryRow("GV|/search/gay-jock/", "🔥 Jocks", listOf(feed("GV", "/search/gay-jock/")),
             Topic(any = jock), fallbackQuery = "gay jock"),
-        CategoryRow("GV|/categories/big-cock/", "Big Dick", listOf(feed("GV", "/categories/big-cock/")),
+        CategoryRow("GV|/categories/big-cock/", "🍌 Big Dick", listOf(feed("GV", "/categories/big-cock/")),
             Topic(any = bigDick), fallbackQuery = "big cock men"),
-        CategoryRow("MP|/categories/bareback/", "Bareback", listOf(feed("MP", "/categories/bareback/")),
+        CategoryRow("MP|/categories/bareback/", "🚫 Bareback", listOf(feed("MP", "/categories/bareback/")),
             Topic(any = bareback), fallbackQuery = "gay bareback"),
-        CategoryRow("GV|/categories/group-sex/", "Group & Orgies", listOf(feed("GV", "/categories/group-sex/")),
+        CategoryRow("GV|/categories/group-sex/", "👥 Group & Orgies", listOf(feed("GV", "/categories/group-sex/")),
             Topic(any = group), fallbackQuery = "gay group"),
-        CategoryRow("MP|/categories/solo/", "Solo Men", listOf(feed("MP", "/categories/solo/")),
+        CategoryRow("MP|/categories/solo/", "🙋 Solo Men", listOf(feed("MP", "/categories/solo/")),
             Topic(any = solo), fallbackQuery = "solo male"),
-        CategoryRow("GV|/categories/outdoor/", "Outdoor & Public", listOf(feed("GV", "/categories/outdoor/")),
+        CategoryRow("GV|/categories/outdoor/", "🌲 Outdoor & Public", listOf(feed("GV", "/categories/outdoor/")),
             Topic(any = outdoor), fallbackQuery = "gay outdoor"),
-        CategoryRow("MP|/categories/cumshot/", "Cumshots", listOf(feed("MP", "/categories/cumshot/")),
+        CategoryRow("MP|/categories/cumshot/", "💦 Cumshots", listOf(feed("MP", "/categories/cumshot/")),
             Topic(any = cum, none = compilation), fallbackQuery = "gay cumshot"),
-        CategoryRow("GV|/categories/gloryhole/", "Gloryholes", listOf(feed("GV", "/categories/gloryhole/")),
+        CategoryRow("GV|/categories/gloryhole/", "🕳️ Gloryholes", listOf(feed("GV", "/categories/gloryhole/")),
             Topic(any = gloryhole), fallbackQuery = "gay gloryhole"),
-        CategoryRow("MP|/categories/handjob/", "Handjobs", listOf(feed("MP", "/categories/handjob/")),
+        CategoryRow("MP|/categories/handjob/", "✋ Handjobs", listOf(feed("MP", "/categories/handjob/")),
             Topic(any = handjob), fallbackQuery = "gay handjob"),
     )
 

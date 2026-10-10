@@ -31,9 +31,11 @@ class LiveCatalogueTest {
         val sources = listOf(ManPornSource(), GayVidsSource(), GayPornTubeSource())
         val pipeline = Pipeline(sources, Deduplicator { id -> sources.firstOrNull { it.id == id }?.let { SourceProfile(it.reliability, it.speed) } })
         runBlocking {
-            for (row in Rows.all) {
+            val only = System.getProperty("liverows").orEmpty().split(',').filter { it.isNotBlank() }
+            for (row in Rows.all.filter { r -> only.isEmpty() || only.any { r.key.startsWith(it) } }) {
                 val started = System.currentTimeMillis()
-                val shown = try { pipeline.loadRow(row, 1) } catch (e: Throwable) { out.appendLine("ERROR ${row.title}: $e"); continue }
+                // Browsing mode: a video may fit several categories, and a short category is still shown.
+                val shown = try { pipeline.loadRow(row, 1, owner = { null }, minItems = 1) } catch (e: Throwable) { out.appendLine("ERROR ${row.title}: $e"); continue }
                 out.appendLine("${if (shown.size >= row.minItems) "OK  " else "HIDE"} ${row.title}: ${shown.size} shown (min ${row.minItems}) in ${System.currentTimeMillis() - started} ms")
                 shown.take(3).forEach { out.appendLine("       - [${it.source}] ${it.title.take(80)}") }
                 File("build/live-report.txt").writeText(out.toString())

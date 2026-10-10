@@ -168,8 +168,8 @@ class CatalogueReliabilityTest {
         Rows.all.forEach { row ->
             assertFalse(row.title, Regex("\\b(top|hottest|best)\\b", RegexOption.IGNORE_CASE).containsMatchIn(row.title))
         }
-        assertEquals(SortRule.NEWEST, Rows.find("ALL|new-today")!!.sort)
-        assertEquals(SortRule.MOST_VIEWED, Rows.find("ALL|popular-week")!!.sort)
+        assertEquals(SortRule.NEWEST, Rows.find("ALL|new")!!.sort)
+        assertEquals(SortRule.MOST_VIEWED, Rows.find("ALL|hot")!!.sort)
     }
 
     @Test fun `every row feed points at a known source prefix`() {
@@ -179,6 +179,28 @@ class CatalogueReliabilityTest {
             row.feeds.forEach { assertTrue("${row.key} ${it.prefix}", it.prefix in prefixes) }
         }
         assertEquals(Rows.all.size, Rows.all.map { it.key }.toSet().size)
+    }
+
+    @Test fun `every category has an emoji and a readable name`() {
+        Rows.all.forEach { row ->
+            assertTrue(row.title, row.emoji.isNotBlank() && row.emoji.none { it.isLetterOrDigit() })
+            assertTrue(row.title, row.name.length >= 3 && row.name.first().isLetterOrDigit())
+        }
+        assertEquals("PNP & Slam", Rows.find("GPT|/search/videos/pnp-slam/page1.html")!!.name)
+        assertEquals("🔥", Rows.find("ALL|hot")!!.emoji)
+        assertEquals("Hot Videos", Rows.find("ALL|hot")!!.name)
+    }
+
+    @Test fun `New Videos and Hot Videos lead and the rest are browsable categories`() {
+        assertEquals(listOf("ALL|new", "ALL|hot"), Rows.all.take(2).map { it.key })
+        assertEquals(listOf("ALL|new", "ALL|hot"), Rows.all.filter { it.special }.map { it.key })
+        assertTrue(Rows.all.count { !it.special } >= 45)
+    }
+
+    @Test fun `browsing a category does not hide a video that fits several`() {
+        val twinkAnal = ItemData("MANPORN", "https://manporn.xxx/videos/9/a/", "Gay twink anal scene")
+        assertTrue(Rows.find("ALL|twink")!!.topic!!.accepts(twinkAnal, true))
+        assertTrue(Rows.find("ALL|anal")!!.topic!!.accepts(twinkAnal, true))
     }
 
     @Test fun `MyVidster is gone`() {

@@ -14,8 +14,8 @@ android {
         applicationId = "com.brostreamah.tv"
         minSdk = 23
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "1.1"
     }
 
     // A release build signed with a key kept outside the repository (see README). Falls back to the debug key.

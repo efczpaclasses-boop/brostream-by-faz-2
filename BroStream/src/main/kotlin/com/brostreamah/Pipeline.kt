@@ -106,9 +106,9 @@ internal class Pipeline(
     }
 
     /** Applies the category's relevance rule, time window and sort rule. */
-    fun select(row: CategoryRow, items: List<ItemData>): List<ItemData> {
+    fun select(row: CategoryRow, items: List<ItemData>, owner: (ItemData) -> CategoryRow? = ownerOf): List<ItemData> {
         val owned = items.filter { item ->
-            (row.topic?.accepts(item, viaSourceCategory = true) ?: true) && ownerOf(item).let { it == null || it === row }
+            (row.topic?.accepts(item, viaSourceCategory = true) ?: true) && owner(item).let { it == null || it === row }
         }
         val windowed = if (!row.hasWindow) owned else owned.filter {
             it.uploadedAt > 0 && now() - it.uploadedAt in -600_000L..row.windowMillis &&
@@ -133,20 +133,29 @@ internal class Pipeline(
     }
 
     /** Videos for one row page, or an empty list when page 1 cannot reach [CategoryRow.minItems]. */
-    suspend fun loadRow(row: CategoryRow, page: Int, limit: Int = 60): List<ItemData> {
+    suspend fun loadRow(
+        row: CategoryRow,
+        page: Int,
+        limit: Int = 60,
+        /** Which row owns an item. Null means no exclusivity: the item may appear in every row it fits (category browsing). */
+        owner: (ItemData) -> CategoryRow? = ownerOf,
+        /** Key under which already-shown videos are remembered; give browsing its own so it never disturbs Home. */
+        stateKey: String = row.key,
+        minItems: Int = row.minItems,
+    ): List<ItemData> {
         val raw = interleave(row.feeds.pmap { feed ->
             byPrefix[feed.prefix]?.let { source -> attempt { source.catalogue(page, feed.path) } }.orEmpty()
         })
         val vetted = vet(raw, row)
-        var shown = dedup.admit(row.key, page, select(row, vetted), limit)
-        if (page == 1 && shown.size < row.minItems && row.fallbackQuery.isNotBlank()) {
+        var shown = dedup.admit(stateKey, page, select(row, vetted, owner), limit)
+        if (page == 1 && shown.size < minItems && row.fallbackQuery.isNotBlank()) {
             // Prefer providers the row did not already read; if it read them all, search them all again.
             val tried = row.feeds.map { it.prefix }.toSet()
             val alternatives = sources.filter { it.prefix !in tried }.ifEmpty { sources }
             val others = alternatives.pmap { source -> attempt { source.search(page, row.fallbackQuery) }.orEmpty() }.flatten()
-            shown = dedup.admit(row.key, page, select(row, vetted + vet(others, row)), limit)
+            shown = dedup.admit(stateKey, page, select(row, vetted + vet(others, row), owner), limit)
         }
-        return if (page == 1 && shown.size < row.minItems) emptyList() else shown
+        return if (page == 1 && shown.size < minItems) emptyList() else shown
     }
 
     suspend fun search(query: String, limit: Int = 80): List<ItemData> {

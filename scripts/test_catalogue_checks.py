@@ -26,9 +26,9 @@ class CatalogueConfigTests(unittest.TestCase):
 
     def test_time_rows_are_flagged(self):
         rows = {row.key: row for row in catalogue_config.load_rows()}
-        self.assertTrue(rows["ALL|new-today"].windowed)
+        self.assertTrue(rows["ALL|new"].windowed)
         self.assertFalse(rows["MP|/"].windowed)
-        self.assertEqual(6, rows["ALL|new-today"].min_items)
+        self.assertEqual(6, rows["ALL|new"].min_items)
 
     def test_removed_sources_are_gone_from_the_source_tree(self):
         text = "".join(p.read_text(encoding="utf-8").lower() for p in catalogue_config.PACKAGE.rglob("*.kt"))

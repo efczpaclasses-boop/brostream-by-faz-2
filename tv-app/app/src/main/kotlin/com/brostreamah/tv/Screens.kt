@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items as gridItems
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -44,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.tv.material3.Button
+import androidx.tv.material3.Card
 import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
@@ -71,17 +73,31 @@ internal fun AgeGateScreen(onAccept: () -> Unit, onExit: () -> Unit) {
 
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
-internal fun HomeScreen(model: HomeModel, engine: Engine, onPlay: (ItemData) -> Unit, onSearch: () -> Unit, onSettings: () -> Unit) {
+internal fun HomeScreen(
+    model: HomeModel, engine: Engine, onPlay: (ItemData) -> Unit,
+    onSearch: () -> Unit, onCategories: () -> Unit, onSettings: () -> Unit,
+) {
     var toHide by remember { mutableStateOf<ItemData?>(null) }
+    // While the app stays open, rows quietly fetch fresh videos every 15 minutes.
+    LaunchedEffect(Unit) {
+        while (true) {
+            kotlinx.coroutines.delay(15 * 60_000L)
+            model.refreshAll()
+        }
+    }
     Column(Modifier.fillMaxSize().padding(top = 24.dp)) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 48.dp), verticalAlignment = Alignment.CenterVertically) {
             Text("BroStream AH", fontSize = 28.sp, color = Accent, modifier = Modifier.weight(1f))
-            Button(onClick = onSearch) { Text("Search") }
-            Spacer(Modifier.padding(horizontal = 8.dp))
-            Button(onClick = onSettings) { Text("Settings") }
+            Button(onClick = onCategories) { Text("📂 Categories") }
+            Spacer(Modifier.padding(horizontal = 6.dp))
+            Button(onClick = onSearch) { Text("🔍 Search") }
+            Spacer(Modifier.padding(horizontal = 6.dp))
+            Button(onClick = { model.refreshAll() }) { Text("🔄 Refresh") }
+            Spacer(Modifier.padding(horizontal = 6.dp))
+            Button(onClick = onSettings) { Text("⚙ Settings") }
         }
         LazyColumn(contentPadding = PaddingValues(vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            items(model.rows, key = { it.row.key }) { ui ->
+            items(model.homeRows, key = { it.row.key }) { ui ->
                 RowSection(ui, model, engine, onPlay) { toHide = it }
             }
         }
@@ -96,16 +112,16 @@ private fun RowSection(ui: RowUi, model: HomeModel, engine: Engine, onPlay: (Ite
     when (ui.status) {
         RowStatus.HIDDEN -> Unit
         RowStatus.IDLE, RowStatus.LOADING -> Column(Modifier.padding(horizontal = 48.dp)) {
-            Text(ui.row.title, fontSize = 20.sp)
+            Text("${ui.row.emoji}  ${ui.row.name}", fontSize = 22.sp)
             Text("Loading…", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         RowStatus.FAILED -> Column(Modifier.padding(horizontal = 48.dp)) {
-            Text(ui.row.title, fontSize = 20.sp)
+            Text("${ui.row.emoji}  ${ui.row.name}", fontSize = 22.sp)
             Text("Could not load. Check the connection, then use Settings > Reload.", fontSize = 13.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         RowStatus.LOADED -> Column {
-            Text(ui.row.title, fontSize = 20.sp, modifier = Modifier.padding(horizontal = 48.dp, vertical = 6.dp))
+            Text("${ui.row.emoji}  ${ui.row.name}", fontSize = 22.sp, modifier = Modifier.padding(horizontal = 48.dp, vertical = 6.dp))
             LazyRow(contentPadding = PaddingValues(horizontal = 48.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 itemsIndexed(ui.items, key = { _, it -> it.url }) { index, item ->
                     if (index >= ui.items.size - 3) LaunchedEffect(ui.items.size) { model.loadMore(ui) }
@@ -133,6 +149,72 @@ private fun HideDialog(item: ItemData, onConfirm: () -> Unit, onCancel: () -> Un
         }
     }
     LaunchedEffect(Unit) { focus.requestFocus() }
+}
+
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+internal fun CategoriesScreen(model: HomeModel, onOpen: (com.brostreamah.CategoryRow) -> Unit) {
+    // Re-read whenever the viewer adds or removes a category, so the badges stay right.
+    val onHome = model.enabledKeys
+    Column(Modifier.fillMaxSize().padding(horizontal = 48.dp, vertical = 24.dp)) {
+        Text("📂 Categories", fontSize = 28.sp, color = Accent)
+        Text("Press OK to open a category. Hold OK to add it to (or remove it from) your Home screen.", fontSize = 15.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 4.dp, bottom = 12.dp))
+        LazyVerticalGrid(
+            columns = GridCells.Adaptive(210.dp), horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp), contentPadding = PaddingValues(bottom = 24.dp),
+        ) {
+            gridItems(model.categories, key = { it.key }) { row ->
+                Card(
+                    onClick = { onOpen(row) }, onLongClick = { model.toggleOnHome(row) },
+                    modifier = Modifier.fillMaxWidth().height(120.dp),
+                ) {
+                    Box(Modifier.fillMaxSize().padding(12.dp)) {
+                        Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(row.emoji, fontSize = 34.sp)
+                            Text(row.name, fontSize = 16.sp, maxLines = 2, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                        }
+                        if (row.key in onHome) {
+                            Text("✓ On Home", fontSize = 11.sp, color = Accent, modifier = Modifier.align(Alignment.TopEnd))
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+internal fun CategoryScreen(
+    row: com.brostreamah.CategoryRow, model: HomeModel, engine: Engine, onPlay: (ItemData) -> Unit,
+) {
+    val ui = remember(row.key) { model.browse(row) }
+    LaunchedEffect(ui) { model.load(ui) }
+    var toHide by remember { mutableStateOf<ItemData?>(null) }
+    val onHome = row.key in model.enabledKeys
+    Column(Modifier.fillMaxSize().padding(horizontal = 48.dp, vertical = 24.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("${row.emoji}  ${row.name}", fontSize = 28.sp, color = Accent, modifier = Modifier.weight(1f))
+            Button(onClick = { model.toggleOnHome(row) }) { Text(if (onHome) "✓ On Home · remove" else "＋ Add to Home") }
+        }
+        Spacer(Modifier.height(12.dp))
+        when (ui.status) {
+            RowStatus.IDLE, RowStatus.LOADING -> Text("Loading videos from all sources…", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            RowStatus.FAILED -> Text("Could not load. Check the connection and try again.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            RowStatus.HIDDEN -> Text("No matching videos right now. Try again later.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            RowStatus.LOADED -> LazyVerticalGrid(
+                columns = GridCells.Adaptive(240.dp), horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp), contentPadding = PaddingValues(bottom = 24.dp),
+            ) {
+                itemsIndexed(ui.items, key = { _, it -> it.url }) { index, item ->
+                    if (index >= ui.items.size - 6) LaunchedEffect(ui.items.size) { model.loadMore(ui) }
+                    VideoCard(item, engine, onPlay = { onPlay(item) }, onLongPress = { toHide = item })
+                }
+            }
+        }
+    }
+    toHide?.let { item -> HideDialog(item, onConfirm = { model.hide(item); toHide = null }, onCancel = { toHide = null }) }
 }
 
 @OptIn(ExperimentalTvMaterial3Api::class)
@@ -206,7 +288,7 @@ internal fun SettingsScreen(engine: Engine, model: HomeModel, onBack: () -> Unit
                 "description; unclear ones are held back. Anything that suggests a minor is always rejected.",
             fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        Text("Version 1.0", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text("Version 1.1", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Button(onClick = onBack) { Text("Back") }
     }
 }

@@ -20,6 +20,8 @@ private sealed interface Screen {
     data object Home : Screen
     data object Search : Screen
     data object Settings : Screen
+    data object Categories : Screen
+    data class Category(val row: com.brostreamah.CategoryRow) : Screen
     data class Play(val item: ItemData) : Screen
 }
 
@@ -50,8 +52,13 @@ private fun Root(engine: Engine, home: HomeModel, onExit: () -> Unit) {
         }
         BackHandler(enabled = stack.last() !is Screen.Play) { pop() }
         when (val screen = stack.last()) {
-            Screen.Home -> HomeScreen(home, engine, onPlay = { push(Screen.Play(it)) }, onSearch = { push(Screen.Search) }, onSettings = { push(Screen.Settings) })
-            Screen.Search -> SearchScreen(engine, onPlay = { push(Screen.Play(it)) })
+            Screen.Home -> HomeScreen(
+                home, engine, onPlay = { home.played(it); push(Screen.Play(it)) }, onSearch = { push(Screen.Search) },
+                onCategories = { push(Screen.Categories) }, onSettings = { push(Screen.Settings) },
+            )
+            Screen.Categories -> CategoriesScreen(home, onOpen = { push(Screen.Category(it)) })
+            is Screen.Category -> CategoryScreen(screen.row, home, engine, onPlay = { home.played(it); push(Screen.Play(it)) })
+            Screen.Search -> SearchScreen(engine, onPlay = { home.played(it); push(Screen.Play(it)) })
             Screen.Settings -> SettingsScreen(engine, home, onBack = { pop() })
             is Screen.Play -> PlayerScreen(engine, screen.item, onClose = { pop() })
         }
