@@ -16,14 +16,15 @@ class LiveCatalogueTest {
     @Test fun `report what every row shows`() {
         assumeTrue(System.getProperty("live").orEmpty().isNotBlank())
         // Outside Android CloudStream's own client cannot start, so plain HTTP stands in for it.
-        com.brostreamah.sources.Web.transport = { url ->
+        com.brostreamah.sources.Web.fetch = { url, headers, maxBytes ->
             try {
                 val c = java.net.URL(url).openConnection() as java.net.HttpURLConnection
-                c.setRequestProperty("User-Agent", com.brostreamah.sources.Web.USER_AGENT)
+                headers.forEach { (k, v) -> c.setRequestProperty(k, v) }
                 c.connectTimeout = 20000; c.readTimeout = 25000
                 val code = c.responseCode
-                val text = (if (code in 200..299) c.inputStream else c.errorStream)?.bufferedReader()?.use { it.readText() }.orEmpty()
-                com.brostreamah.sources.Web.Response(code, text)
+                val stream = if (code in 200..299) c.inputStream else c.errorStream
+                val body = stream?.let { com.brostreamah.sources.Web.readUpTo(it, maxBytes) } ?: ByteArray(0)
+                com.brostreamah.sources.Web.Raw(code, c.headerFields.filterKeys { it != null }.mapValues { it.value.firstOrNull().orEmpty() }, body)
             } catch (e: Exception) { null }
         }
         val out = StringBuilder()

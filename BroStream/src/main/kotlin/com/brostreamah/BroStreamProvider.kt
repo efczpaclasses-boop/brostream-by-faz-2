@@ -24,57 +24,22 @@ class BroStreamProvider : MainAPI() {
     private val mapper = jacksonObjectMapper()
     private val sources: List<VideoSource> = listOf(ManPornSource(), GayVidsSource(), GayPornTubeSource())
     private val byId = sources.associateBy { it.id }
-    private val blocklistCache = ExpiringCache<Blocklist>(max = 1, ttlMillis = 6 * 3_600_000L)
     private val pipeline = Pipeline(
         sources, Deduplicator { id -> byId[id]?.let { SourceProfile(it.reliability, it.speed) } },
-        verdicts = PersistentVerdictStore(), blocklist = ::blocklist,
+        verdicts = PersistentVerdictStore(mapper), blocklist = BlocklistLoader(mapper)::get,
     )
 
-    /** Corrections from blocklist.json on the builds branch; an unreachable file means no extra blocks. */
-    private suspend fun blocklist(): Blocklist {
-        blocklistCache.get("list")?.let { return it }
-        val fetched = attempt { app.get(BLOCKLIST_URL, timeout = 15) }?.takeIf { it.code in 200..299 }
-            ?.let { Blocklist.parse(it.text, mapper) } ?: Blocklist.EMPTY
-        blocklistCache.put("list", fetched)
-        return fetched
-    }
-
-    /** Inspection outcomes survive restarts, so unclear videos are not downloaded again every session. */
-    private inner class PersistentVerdictStore : VerdictStore {
-        private val memory = MemoryVerdictStore()
-        private var loaded = false
-        private var pending = 0
-
-        private fun load() {
-            if (loaded) return
-            loaded = true
-            Persist.read(VERDICTS_KEY)?.let { text ->
-                attempt { mapper.readTree(text) }?.fields()?.forEach { (id, node) ->
-                    val verdict = attempt { Verdict.valueOf(node.path("v").asText()) } ?: return@forEach
-                    memory.put(id, StoredVerdict(verdict, node.path("t").asLong()))
-                }
+    init {
+        // CloudStream's own client does the network work for this host.
+        Web.fetch = { url, headers, maxBytes ->
+            attempt { app.get(url, headers = headers, timeout = 25) }?.let { response ->
+                Web.Raw(
+                    response.code,
+                    response.headers.toMultimap().mapValues { it.value.firstOrNull().orEmpty() },
+                    Web.readUpTo(response.body.byteStream(), maxBytes),
+                )
             }
         }
-
-        @Synchronized override fun get(id: String): StoredVerdict? { load(); return memory.get(id) }
-
-        @Synchronized override fun put(id: String, verdict: StoredVerdict) {
-            load()
-            memory.put(id, verdict)
-            if (++pending >= 20) { pending = 0; save() }
-        }
-
-        private fun save() {
-            // Only the newest entries are kept, so the stored value stays small.
-            val snapshot = memory.recent(1500).associate { (id, v) -> id to mapOf("v" to v.verdict.name, "t" to v.at) }
-            attempt { mapper.writeValueAsString(snapshot) }?.let { Persist.write(VERDICTS_KEY, it) }
-        }
-    }
-
-    companion object {
-        private const val BLOCKLIST_URL =
-            "https://raw.githubusercontent.com/efczpaclasses-boop/brostream-by-faz-2/builds-ah/blocklist.json"
-        private const val VERDICTS_KEY = "brostream_verdicts_v1"
     }
 
     override val mainPage = mainPageOf(*Rows.all.map { it.key to it.title }.toTypedArray())

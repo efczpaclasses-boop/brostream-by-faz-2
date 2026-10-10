@@ -4,7 +4,6 @@ import com.brostreamah.StreamCheck
 import com.brostreamah.StreamValidator
 import com.brostreamah.attempt
 import com.brostreamah.isHttpUrl
-import com.lagradost.cloudstream3.app
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import java.net.URI
@@ -17,12 +16,28 @@ internal object Web {
 
     class Response(val code: Int, val text: String)
 
-    /** Fetches a page. Replaced only by the opt-in live test, which runs outside Android. */
-    var transport: suspend (String) -> Response? = { url ->
-        attempt { app.get(url, headers = headers, timeout = 25).let { Response(it.code, it.text) } }
+    /** A raw HTTP answer: status, response headers (any case) and at most the requested number of body bytes. */
+    class Raw(val code: Int, val headers: Map<String, String>, val body: ByteArray)
+
+    /**
+     * The one place that touches the network. The host (CloudStream plugin, Android TV app, or the live test)
+     * installs it; reading must stop after `maxBytes` of the body.
+     */
+    var fetch: suspend (url: String, headers: Map<String, String>, maxBytes: Int) -> Raw? = { _, _, _ -> null }
+
+    fun readUpTo(stream: java.io.InputStream, maxBytes: Int): ByteArray = stream.use {
+        val buffer = java.io.ByteArrayOutputStream()
+        val chunk = ByteArray(8192)
+        while (buffer.size() < maxBytes) {
+            val n = it.read(chunk, 0, minOf(chunk.size, maxBytes - buffer.size()))
+            if (n < 0) break
+            buffer.write(chunk, 0, n)
+        }
+        buffer.toByteArray()
     }
 
-    suspend fun page(url: String): Response? = transport(url)
+    suspend fun page(url: String): Response? =
+        attempt { fetch(url, headers, 6_000_000) }?.let { Response(it.code, String(it.body, Charsets.UTF_8)) }
 
     suspend fun document(url: String): Document? =
         page(url)?.takeIf { it.code in 200..299 }?.let { Jsoup.parse(it.text, url) }
@@ -37,22 +52,13 @@ internal object Web {
 
     /** Requests the first bytes of a stream and judges them; never throws. */
     suspend fun probe(url: String, referer: String, hls: Boolean): StreamCheck = try {
-        val response = app.get(
-            url, timeout = 20,
-            headers = mapOf("User-Agent" to USER_AGENT, "Referer" to referer, "Range" to "bytes=0-${StreamValidator.PROBE_BYTES - 1}",
+        val raw = fetch(
+            url,
+            mapOf("User-Agent" to USER_AGENT, "Referer" to referer, "Range" to "bytes=0-${StreamValidator.PROBE_BYTES - 1}",
                 "Accept-Encoding" to "identity"),
+            StreamValidator.PROBE_BYTES,
         )
-        val body = response.body.byteStream().use { stream ->
-            val buffer = ByteArray(StreamValidator.PROBE_BYTES)
-            var read = 0
-            while (read < buffer.size) {
-                val n = stream.read(buffer, read, buffer.size - read)
-                if (n < 0) break
-                read += n
-            }
-            buffer.copyOf(read)
-        }
-        StreamValidator.check(response.code, response.headers.toMultimap().mapValues { it.value.firstOrNull().orEmpty() }, body, hls)
+        if (raw == null) StreamCheck(false, false, "no response") else StreamValidator.check(raw.code, raw.headers, raw.body, hls)
     } catch (cancelled: java.util.concurrent.CancellationException) {
         throw cancelled
     } catch (e: Exception) {
