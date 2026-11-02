@@ -7,7 +7,9 @@ import com.lagradost.cloudstream3.utils.*
 import java.net.URI
 import java.net.URLEncoder
 
-class EpornerGayProvider : MainAPI() {
+class EpornerGayProvider(
+    private val savedOfficialRows: () -> Set<String>? = { null },
+) : MainAPI() {
     override var mainUrl = MP_BASE
     override var name = "BroStream by Faz 2"
     override var lang = "en"
@@ -37,8 +39,7 @@ class EpornerGayProvider : MainAPI() {
         val poster: String? = null,
     )
 
-    override val mainPage = mainPageOf(
-        ChaturbateMaleLive.ROW_KEY to ChaturbateMaleLive.ROW_NAME,
+    private val scrapedMainPage = mainPageOf(
         "MP|/" to "🔥 Fresh Gay Men",
         "GV|/" to "🆕 New Gay Videos",
         "GV|/categories/amateur/" to "🏠 Top Amateur Men",
@@ -73,6 +74,9 @@ class EpornerGayProvider : MainAPI() {
         "MP|/categories/webcam/" to "Webcam & Creator-Made",
     )
 
+    override val mainPage: List<com.lagradost.cloudstream3.MainPageData>
+        get() = OfficialCatalogue.mainPage(savedOfficialRows()) + scrapedMainPage
+
     private val queries = mapOf(
         "MP|/" to "gay men", "GV|/" to "new gay men", "GV|/categories/amateur/" to "amateur men",
         "MP|/search/?q=amateur+gay+blowjob" to "amateur gay blowjob",
@@ -96,7 +100,7 @@ class EpornerGayProvider : MainAPI() {
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         require(page >= 1) { "Page numbers start at 1" }
-        if (request.data == ChaturbateMaleLive.ROW_KEY) return ChaturbateMaleLive.homePage(this, page, request.name)
+        OfficialCatalogue.home(this, page, request)?.let { return it }
         val primary = when {
             request.data == "CURATED" -> curated.drop((page - 1) * 20).take(20)
             request.data.startsWith("MP|") -> manPorn(page, request.data.removePrefix("MP|"))
@@ -182,13 +186,16 @@ class EpornerGayProvider : MainAPI() {
             runCatching { manPorn(1, "/search/?q=${encode(query)}") }.getOrDefault(emptyList()),
             runCatching { gayVids(1, "/search/${slug(query)}/") }.getOrDefault(emptyList()),
             runCatching { gayPornTube(1, "/search/videos/${slug(query)}/page1.html") }.getOrDefault(emptyList()),
-        ).flatten().filter(::isMenOnly).let { uniqueCatalogue(it, ::itemKeys) }.take(80).map { it.response() }
+        ).flatten().filter(::isMenOnly).let { uniqueCatalogue(it, ::itemKeys) }.map { it.response() }.let { scraped ->
+            val official = runCatching { OfficialCatalogue.search(this, query) }.getOrDefault(emptyList())
+            (scraped + official).take(80)
+        }
     }
 
     override suspend fun quickSearch(query: String): List<SearchResponse> = search(query)
 
     override suspend fun load(url: String): LoadResponse? {
-        if (ChaturbateMaleLive.handles(url)) return ChaturbateMaleLive.load(this, url)
+        if (OfficialCatalogue.handles(url)) return OfficialCatalogue.load(this, url)
         val item = parse(url) ?: return null
         if (item.source == Source.CURATED.name) return simpleLoad(item, url)
         val doc = runCatching { app.get(item.url, headers = headers, timeout = 25).document }.getOrNull()
@@ -211,7 +218,7 @@ class EpornerGayProvider : MainAPI() {
         }
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
-        if (ChaturbateMaleLive.handles(data)) return ChaturbateMaleLive.loadLinks(data, callback)
+        if (OfficialCatalogue.handles(data)) return OfficialCatalogue.loadLinks(data, callback)
         val item = parse(data) ?: return false
         val deliveries = LinkDeliveries()
         val trackedCallback: (ExtractorLink) -> Unit = { link ->
