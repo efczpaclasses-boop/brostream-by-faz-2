@@ -15,7 +15,7 @@ class EpornerGayProvider : MainAPI() {
     override val hasQuickSearch = true
     override val hasDownloadSupport = true
     override val hasChromecastSupport = true
-    override val supportedTypes = setOf(TvType.NSFW)
+    override val supportedTypes = setOf(TvType.NSFW, TvType.Live)
     override val vpnStatus = VPNStatus.MightBeNeeded
 
     companion object {
@@ -38,6 +38,7 @@ class EpornerGayProvider : MainAPI() {
     )
 
     override val mainPage = mainPageOf(
+        ChaturbateMaleLive.ROW_KEY to ChaturbateMaleLive.ROW_NAME,
         "MP|/" to "🔥 Fresh Gay Men",
         "GV|/" to "🆕 New Gay Videos",
         "GV|/categories/amateur/" to "🏠 Top Amateur Men",
@@ -95,6 +96,7 @@ class EpornerGayProvider : MainAPI() {
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         require(page >= 1) { "Page numbers start at 1" }
+        if (request.data == ChaturbateMaleLive.ROW_KEY) return ChaturbateMaleLive.homePage(this, page, request.name)
         val primary = when {
             request.data == "CURATED" -> curated.drop((page - 1) * 20).take(20)
             request.data.startsWith("MP|") -> manPorn(page, request.data.removePrefix("MP|"))
@@ -186,6 +188,7 @@ class EpornerGayProvider : MainAPI() {
     override suspend fun quickSearch(query: String): List<SearchResponse> = search(query)
 
     override suspend fun load(url: String): LoadResponse? {
+        if (ChaturbateMaleLive.handles(url)) return ChaturbateMaleLive.load(this, url)
         val item = parse(url) ?: return null
         if (item.source == Source.CURATED.name) return simpleLoad(item, url)
         val doc = runCatching { app.get(item.url, headers = headers, timeout = 25).document }.getOrNull()
@@ -208,6 +211,7 @@ class EpornerGayProvider : MainAPI() {
         }
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
+        if (ChaturbateMaleLive.handles(data)) return ChaturbateMaleLive.loadLinks(data, callback)
         val item = parse(data) ?: return false
         val deliveries = LinkDeliveries()
         val trackedCallback: (ExtractorLink) -> Unit = { link ->
