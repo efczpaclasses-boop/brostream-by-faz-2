@@ -1,10 +1,10 @@
 [
   {
     "iconUrl": "https://www.google.com/s2/favicons?domain=manporn.xxx&sz=%size%",
-    "fileHash": "sha256-a540d2e180cb9989075d3163e2026a963cf84bd4186d2f6143f7e0eef417665f",
+    "fileHash": "sha256-a085cfc5eada5ae9bf4b0efc22fa3ebee92ca18264f8f8910356b9e59700d43c",
     "apiVersion": 1,
     "repositoryUrl": "https://github.com/efczpaclasses-boop/brostream-by-faz-2",
-    "fileSize": 53399,
+    "fileSize": 120856,
     "status": 3,
     "language": "en",
     "authors": [
@@ -14,10 +14,10 @@
       "NSFW",
       "Live"
     ],
-    "version": 7,
+    "version": 8,
     "internalName": "BroStreamFreshByFaz2",
-    "description": "BroStream by Faz 2 v7: new Live Male Cams row from Chaturbate's official affiliate feed (rooms open via official links), plus the existing gay men catalogue. Adults only.",
-    "url": "https://raw.githubusercontent.com/efczpaclasses-boop/brostream-by-faz-2/builds/BroStreamFreshByFaz2-v7.cs3",
+    "description": "BroStream by Faz 2 v8: gay-male catalogue plus official Chaturbate, Stripchat, Eporner, and Pornhub webmaster feeds. CamSoda stays hidden until an affiliate id is set. Adults only.",
+    "url": "https://raw.githubusercontent.com/efczpaclasses-boop/brostream-by-faz-2/builds/BroStreamFreshByFaz2-v8.cs3",
     "name": "BroStreamFreshByFaz2"
   }
 ]
