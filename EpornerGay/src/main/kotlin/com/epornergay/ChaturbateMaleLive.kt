@@ -6,37 +6,41 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.utils.*
+import com.lagradost.cloudstream3.utils.ExtractorLink
+import java.net.URLEncoder
 
 /**
- * "🔴 Live Male Cams (Chaturbate)" row, powered ONLY by Chaturbate's official
- * affiliate "online rooms" API (Promo Tools → JSON/XML API in your affiliate account).
+ * Male Chaturbate rooms from the official affiliate online-rooms API only.
  *
- * What this does:
- *  - Lists currently-online male rooms (gender=m) with thumbnail, title, viewers and tags.
- *  - Opens each room via the official affiliate (revshare) room link / iframe embed
- *    returned by the API, which carries YOUR campaign code.
- *
- * Honest limitation:
- *  - The official API does not hand out raw HLS/m3u8 stream URLs, and this code does
- *    NOT scrape Chaturbate's private endpoints for them. CloudStream's built-in player
- *    can only play direct media links, so rooms are NOT played inside CloudStream.
- *    The details page shows the official room link, and the result's URL is that link,
- *    so "Open in browser"/share opens the room in a browser or the Chaturbate app.
+ * Gender stays `m`. [CAMPAIGN_CODE] stays `0esJu`. Rows can add `hd=true`,
+ * one `region`, and up to five `tag` parameters. Each page is ordered HD first,
+ * then by `num_users`. The API does not return a media playlist, and this file
+ * does not request one. Rooms open through the affiliate room link.
  */
 object ChaturbateMaleLive {
 
-    // Public Chaturbate affiliate campaign code ("wm" slug) from Promo Tools → API.
     const val CAMPAIGN_CODE = "0esJu"
 
     const val ROW_KEY = "CB_LIVE_MALE"
     const val ROW_NAME = "🔴 Live Male Cams (Chaturbate)"
     private const val PAGE_SIZE = 40
     private const val MARKER = "cb_live_male"
-
-    // Official affiliate API (v2). client_ip=request_ip lets Chaturbate apply its
-    // regional rules for the device that makes the call, as the API requires.
     private const val API = "https://chaturbate.com/api/public/affiliates/onlinerooms/"
+    private const val MAX_TAGS = 5
+
+    val REGIONS = listOf(
+        "northamerica" to "North America",
+        "europe_russia" to "Europe & Russia",
+        "southamerica" to "South America",
+        "asia" to "Asia",
+        "other" to "Other regions",
+    )
+
+    /** Single-tag rows. The affiliate API accepts at most five tag parameters. */
+    val TAGS = listOf(
+        "muscle", "bear", "latino", "daddy", "twink", "uncut",
+        "asian", "black", "hairy", "jock", "chubby", "bigcock",
+    )
 
     private val mapper = jacksonObjectMapper()
 
@@ -62,7 +66,12 @@ object ChaturbateMaleLive {
         @JsonProperty("is_hd") val isHd: Boolean? = null,
     )
 
-    /** What we store in the search-response URL so load()/loadLinks() can recognise our items. */
+    data class Query(
+        val hd: Boolean = false,
+        val region: String? = null,
+        val tags: List<String> = emptyList(),
+    )
+
     @JsonIgnoreProperties(ignoreUnknown = true)
     data class LiveItem(
         val kind: String = MARKER,
@@ -74,53 +83,100 @@ object ChaturbateMaleLive {
         val viewers: Int? = null,
         val tags: List<String> = emptyList(),
         val subject: String? = null,
+        val hd: Boolean = false,
     )
+
+    fun handlesRow(data: String): Boolean = data == ROW_KEY || data.startsWith("CB|")
 
     fun handles(data: String): Boolean =
         data.contains("\"kind\":\"$MARKER\"") || Regex("^https://([a-z]+\\.)?chaturbate\\.com/").containsMatchIn(data)
 
-    private fun parseItem(data: String): LiveItem? {
-        if (data.startsWith("https://")) {
-            // Bookmarked/reopened room: we only know the official room link.
-            val user = Regex("[?&]room=([A-Za-z0-9_]+)").find(data)?.groupValues?.get(1)
-                ?: data.substringAfter("chaturbate.com/").trim('/').substringBefore('/').substringBefore('?')
-            return LiveItem(username = user, title = user, roomUrl = data).takeIf { user.isNotBlank() }
+    fun rows(): List<OfficialRow> {
+        val rows = mutableListOf(
+            OfficialRow(ROW_KEY, ROW_NAME, core = true, defaultOn = true),
+            OfficialRow("CB|hd", "🔴 Chaturbate HD men", core = true, defaultOn = true),
+        )
+        REGIONS.forEach { (id, label) ->
+            rows += OfficialRow("CB|region|$id", "🔴 Chaturbate · $label", core = false, defaultOn = true)
         }
-        return runCatching { mapper.readValue<LiveItem>(data) }.getOrNull()?.takeIf { it.kind == MARKER && it.username.isNotBlank() }
+        TAGS.forEach { tag ->
+            rows += OfficialRow("CB|tag|$tag", "🔴 Chaturbate · #$tag", core = false, defaultOn = true)
+        }
+        return rows
     }
 
-    /** Official affiliate room link (falls back to building the documented affiliate link). */
+    /** Extra AND-row when the viewer has saved two to five tag rows. */
+    fun mixRow(selectedTagIds: List<String>): OfficialRow? {
+        val tags = selectedTagIds.map { it.removePrefix("CB|tag|") }.filter { it in TAGS }.distinct().take(MAX_TAGS)
+        if (tags.size !in 2..MAX_TAGS) return null
+        return OfficialRow("CB|tags|${tags.joinToString(",")}", "🔴 Chaturbate · ${tags.joinToString(" + ")}", core = true, defaultOn = true)
+    }
+
+    internal fun queryFor(row: String): Query = when {
+        row == "CB|hd" -> Query(hd = true)
+        row.startsWith("CB|region|") -> Query(region = row.removePrefix("CB|region|").takeIf { it.isNotBlank() })
+        row.startsWith("CB|tag|") -> Query(tags = listOfNotNull(row.removePrefix("CB|tag|").takeIf { it.isNotBlank() }))
+        row.startsWith("CB|tags|") -> Query(tags = row.removePrefix("CB|tags|").split(',').map { it.trim() }.filter { it.isNotEmpty() })
+        else -> Query()
+    }
+
+    internal fun apiUrl(page: Int, query: Query): String {
+        val offset = (page - 1).coerceAtLeast(0) * PAGE_SIZE
+        val tags = query.tags.map { it.trim() }.filter { it.isNotEmpty() }.distinct().take(MAX_TAGS)
+        return buildString {
+            append(API)
+            append("?format=json&wm=")
+            append(URLEncoder.encode(CAMPAIGN_CODE, "UTF-8"))
+            append("&client_ip=request_ip&gender=m&limit=")
+            append(PAGE_SIZE)
+            append("&offset=")
+            append(offset)
+            if (query.hd) append("&hd=true")
+            query.region?.takeIf { it.isNotBlank() }?.let {
+                append("&region=")
+                append(URLEncoder.encode(it, "UTF-8"))
+            }
+            tags.forEach {
+                append("&tag=")
+                append(URLEncoder.encode(it, "UTF-8"))
+            }
+        }
+    }
+
+    internal fun parseRooms(body: String): List<Room> {
+        val root: JsonNode = runCatching { mapper.readTree(body) }.getOrNull() ?: return emptyList()
+        val array = when {
+            root.isArray -> root
+            root.has("results") -> root.get("results")
+            root.has("rooms") -> root.get("rooms")
+            else -> return emptyList()
+        }
+        return array.mapNotNull { runCatching { mapper.treeToValue(it, Room::class.java) }.getOrNull() }
+    }
+
+    internal fun present(rooms: List<Room>): List<Room> = rooms
+        .filter { it.username.isNotBlank() && (it.gender == null || it.gender == "m") }
+        .filter { it.age == null || it.age >= 18 }
+        .filter { it.currentShow == null || it.currentShow == "public" }
+        .orderHdThenPopularity(hd = { it.isHd == true }, popularity = { (it.numUsers ?: 0).toLong() })
+
     private fun roomLink(room: Room): String =
         room.chatRoomUrlRevshare?.takeIf { it.startsWith("http") }
             ?: room.chatRoomUrl?.takeIf { it.startsWith("http") }
             ?: "https://chaturbate.com/${room.username}/"
 
-    /** Pulls the src="..." out of the official iframe embed HTML the API returns. */
-    private fun embedLink(room: Room): String? {
-        val html = room.iframeEmbedRevshare ?: room.iframeEmbed ?: return null
-        return Regex("src=['\"]([^'\"]+)['\"]").find(html)?.groupValues?.get(1)
-            ?.replace("&amp;", "&")?.let { if (it.startsWith("//")) "https:$it" else it }
+    private fun embedLink(room: Room): String? = officialEmbedSrc(room.iframeEmbedRevshare ?: room.iframeEmbed)
+
+    private suspend fun fetchRooms(page: Int, query: Query): Pair<List<Room>, Boolean> {
+        if (!isConfigured) return emptyList<Room>() to false
+        val body = runCatching { app.get(apiUrl(page, query), timeout = 20).text }.getOrNull()
+            ?: return emptyList<Room>() to false
+        val parsed = parseRooms(body)
+        return present(parsed) to (parsed.size >= PAGE_SIZE)
     }
 
-    private suspend fun fetchRooms(page: Int): List<Room> {
-        if (!isConfigured) return emptyList()
-        val offset = (page - 1).coerceAtLeast(0) * PAGE_SIZE
-        val url = "$API?format=json&wm=$CAMPAIGN_CODE&client_ip=request_ip&gender=m&limit=$PAGE_SIZE&offset=$offset"
-        val body = runCatching { app.get(url, timeout = 20).text }.getOrNull() ?: return emptyList()
-        val root: JsonNode = runCatching { mapper.readTree(body) }.getOrNull() ?: return emptyList()
-        // v2 returns {"results":[...],"count":N}; the legacy v1 feed returns a bare array.
-        val array = when {
-            root.isArray -> root
-            root.has("results") -> root.get("results")
-            else -> return emptyList()
-        }
-        return array.mapNotNull { runCatching { mapper.treeToValue(it, Room::class.java) }.getOrNull() }
-            .filter { it.username.isNotBlank() && (it.gender == null || it.gender == "m") }
-            .filter { it.currentShow == null || it.currentShow == "public" }
-    }
-
-    suspend fun homePage(api: MainAPI, page: Int, rowName: String): HomePageResponse {
-        val rooms = fetchRooms(page)
+    suspend fun homePage(api: MainAPI, page: Int, rowName: String, rowKey: String = ROW_KEY): HomePageResponse {
+        val (rooms, full) = fetchRooms(page, queryFor(rowKey))
         val items = rooms.map { room ->
             val item = LiveItem(
                 username = room.username,
@@ -131,15 +187,49 @@ object ChaturbateMaleLive {
                 viewers = room.numUsers,
                 tags = room.tags.orEmpty(),
                 subject = room.roomSubject,
+                hd = room.isHd == true,
+            )
+            val viewers = item.viewers?.let { " · $it" }.orEmpty()
+            val hd = if (item.hd) " HD" else ""
+            api.newLiveSearchResponse("🔴 ${item.title}$hd$viewers", mapper.writeValueAsString(item), TvType.Live) {
+                posterUrl = item.poster
+            }
+        }
+        return newHomePageResponse(HomePageList(rowName, items, true), hasNext = full)
+    }
+
+    suspend fun search(api: MainAPI, query: String): List<SearchResponse> {
+        if (query.isBlank()) return emptyList()
+        val needle = query.trim().lowercase()
+        val (rooms, _) = fetchRooms(1, Query())
+        return rooms.filter { room ->
+            listOf(room.username, room.displayName, room.roomSubject, room.tags.orEmpty().joinToString(" "))
+                .any { it?.lowercase()?.contains(needle) == true }
+        }.map { room ->
+            val item = LiveItem(
+                username = room.username,
+                title = room.displayName?.takeIf { it.isNotBlank() } ?: room.username,
+                poster = room.imageUrl360 ?: room.imageUrl,
+                roomUrl = roomLink(room),
+                embedUrl = embedLink(room),
+                viewers = room.numUsers,
+                tags = room.tags.orEmpty(),
+                subject = room.roomSubject,
+                hd = room.isHd == true,
             )
             api.newLiveSearchResponse("🔴 ${item.title}", mapper.writeValueAsString(item), TvType.Live) {
                 posterUrl = item.poster
             }
         }
-        return newHomePageResponse(
-            HomePageList(rowName, items, true),
-            hasNext = rooms.size >= PAGE_SIZE,
-        )
+    }
+
+    private fun parseItem(data: String): LiveItem? {
+        if (data.startsWith("https://")) {
+            val user = Regex("[?&]room=([A-Za-z0-9_]+)").find(data)?.groupValues?.get(1)
+                ?: data.substringAfter("chaturbate.com/").trim('/').substringBefore('/').substringBefore('?')
+            return LiveItem(username = user, title = user, roomUrl = data).takeIf { user.isNotBlank() }
+        }
+        return runCatching { mapper.readValue<LiveItem>(data) }.getOrNull()?.takeIf { it.kind == MARKER && it.username.isNotBlank() }
     }
 
     suspend fun load(api: MainAPI, data: String): LoadResponse? {
@@ -147,10 +237,10 @@ object ChaturbateMaleLive {
         val plot = buildString {
             item.subject?.takeIf { it.isNotBlank() }?.let { appendLine(it); appendLine() }
             item.viewers?.let { appendLine("👀 $it watching now") }
+            if (item.hd) appendLine("HD room")
             appendLine("Open room (official link): ${item.roomUrl}")
             item.embedUrl?.let { appendLine("Official embed player: $it") }
-            appendLine("Live rooms open in the browser/Chaturbate app, not CloudStream's player.")
-            if (!isConfigured) appendLine("⚠️ Set CAMPAIGN_CODE in ChaturbateMaleLive.kt.")
+            appendLine("Live rooms open in the browser or Chaturbate app. The affiliate feed does not include a media playlist.")
         }
         return api.newLiveStreamLoadResponse(item.title, item.roomUrl, data) {
             posterUrl = item.poster
@@ -160,11 +250,8 @@ object ChaturbateMaleLive {
     }
 
     /**
-     * Intentionally offers NO playable link: the official affiliate API returns only
-     * room pages and iframe embeds (web pages), not raw media streams, and this
-     * extension does not scrape Chaturbate's private stream endpoints. Rooms are opened
-     * through the official room link instead (see load(): the result's URL is the
-     * affiliate room link, so CloudStream's "Open in browser"/share opens it).
+     * The affiliate payload has room pages and iframe HTML, not a media playlist.
+     * Nothing is passed to the player, and no private stream endpoint is called.
      */
     @Suppress("UNUSED_PARAMETER")
     suspend fun loadLinks(data: String, callback: (ExtractorLink) -> Unit): Boolean = false
