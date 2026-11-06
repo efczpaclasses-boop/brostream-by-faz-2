@@ -79,7 +79,7 @@ object PornhubGayWebmasters {
     )
 
     fun rows(): List<OfficialRow> = GAY_CATEGORIES.map { slug ->
-        OfficialRow("PH|$slug", "Pornhub · ${slug.removeSuffix("-gay")}", core = false, defaultOn = true)
+        OfficialRow("PH|$slug", "Pornhub · ${slug.removeSuffix("-gay")}", core = false, defaultOn = false)
     }
 
     fun handlesRow(data: String): Boolean = data.startsWith("PH|")
@@ -150,7 +150,7 @@ object PornhubGayWebmasters {
         val category = rowKey.removePrefix("PH|")
         val (items, more) = fetch(page, category, null)
         val cards = items.map { entry ->
-            api.newMovieSearchResponse("${entry.title} · ${entry.views}", mapper.writeValueAsString(entry), TvType.NSFW) {
+            api.newMovieSearchResponse("${entry.title} · ${entry.views}", mapper.writeValueAsString(entry), TvType.NSFW, false) {
                 posterUrl = entry.poster
             }
         }
@@ -161,7 +161,7 @@ object PornhubGayWebmasters {
         if (query.isBlank()) return emptyList()
         val (items, _) = fetch(1, null, query.trim())
         return items.map { entry ->
-            api.newMovieSearchResponse(entry.title, mapper.writeValueAsString(entry), TvType.NSFW) { posterUrl = entry.poster }
+            api.newMovieSearchResponse(entry.title, mapper.writeValueAsString(entry), TvType.NSFW, false) { posterUrl = entry.poster }
         }
     }
 

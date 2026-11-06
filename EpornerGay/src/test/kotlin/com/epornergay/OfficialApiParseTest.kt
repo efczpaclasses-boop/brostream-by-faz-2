@@ -68,7 +68,7 @@ class OfficialApiParseTest {
     }
 
     @Test fun `camsoda stays hidden until the affiliate id is set and uses returned links`() {
-        assertEquals(listOf(CamSodaMaleLive.NOTE_ROW), CamSodaMaleLive.rows("").map { it.id })
+        assertTrue(CamSodaMaleLive.rows("").isEmpty())
         assertFalse(CamSodaMaleLive.rows("aff").any { it.id == CamSodaMaleLive.NOTE_ROW })
         val url = CamSodaMaleLive.apiUrl(1, "muscular", "aff")
         assertTrue(url.contains("id=aff"))
@@ -94,6 +94,10 @@ class OfficialApiParseTest {
         assertTrue(url.contains("lq=0"))
         assertTrue(url.contains("order=top-weekly"))
         assertTrue(url.contains("query=amateur"))
+        assertTrue(EpornerGayVideos.apiUrl(1, "latest", "all").contains("query=gay"))
+        assertFalse(EpornerGayVideos.apiUrl(1, "latest", "all").contains("query=all"))
+        assertFalse(EpornerGayVideos.gayMaleTitle("BBW Shemale Fucked"))
+        assertTrue(EpornerGayVideos.gayMaleTitle("Pinoy Gay Sex In Hotel"))
         val body = """
             {"total_pages":3,"videos":[
               {"id":"keep0000001","title":"Kept","views":10,"embed":"https://www.eporner.com/embed/keep0000001/","url":"https://www.eporner.com/hd-porn/keep0000001/Kept/","default_thumb":{"src":"https://cdn.example/a.jpg"}},
@@ -138,11 +142,21 @@ class OfficialApiParseTest {
     @Test fun `settings keep core rows and can hide optional categories`() {
         val rows = OfficialCatalogue.allRows()
         val defaults = OfficialCatalogue.rowPairs(null).map { it.first }
-        assertTrue(defaults.contains(ChaturbateMaleLive.ROW_KEY))
-        assertTrue(defaults.contains("SC|men"))
-        assertTrue(defaults.contains("EP|top-weekly|all"))
-        assertTrue(defaults.contains(CamSodaMaleLive.NOTE_ROW))
-        assertTrue(defaults.contains("PH|amateur-gay"))
+        assertEquals(
+            listOf(
+                ChaturbateMaleLive.ROW_KEY,
+                "CB|hd",
+                "SC|men",
+                "SC|hd",
+                "EP|top-weekly|all",
+                "EP|most-popular|all",
+                "EP|latest|all",
+                "EP|top-rated|all",
+            ),
+            defaults,
+        )
+        assertFalse(defaults.contains(CamSodaMaleLive.NOTE_ROW))
+        assertFalse(defaults.any { it.startsWith("PH|") || it.startsWith("CB|tag|") || it.startsWith("SC|tag|") })
         val coreOnly = OfficialCatalogue.rowPairs(emptySet()).map { it.first }
         assertTrue(coreOnly.contains(ChaturbateMaleLive.ROW_KEY))
         assertFalse(coreOnly.contains("PH|amateur-gay"))

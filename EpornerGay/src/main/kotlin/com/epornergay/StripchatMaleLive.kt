@@ -119,10 +119,10 @@ object StripchatMaleLive {
             OfficialRow("SC|hd", "🟣 Stripchat HD men", core = true, defaultOn = true),
         )
         TAGS.forEach { (slug, label) ->
-            rows += OfficialRow("SC|tag|$slug", "🟣 Stripchat · $label", core = false, defaultOn = true)
+            rows += OfficialRow("SC|tag|$slug", "🟣 Stripchat · $label", core = false, defaultOn = false)
         }
         SUBCULTURES.forEach { (slug, label) ->
-            rows += OfficialRow("SC|sub|$slug", "🟣 Stripchat · $label", core = false, defaultOn = slug != "subcultureBdsm")
+            rows += OfficialRow("SC|sub|$slug", "🟣 Stripchat · $label", core = false, defaultOn = false)
         }
         return rows
     }
@@ -233,7 +233,7 @@ object StripchatMaleLive {
         val items = rooms.mapNotNull { model ->
             val entry = item(model) ?: return@mapNotNull null
             val hd = if (entry.hd) " HD" else ""
-            api.newLiveSearchResponse("🟣 ${entry.title}$hd · ${entry.viewers}", mapper.writeValueAsString(entry), TvType.Live) {
+            api.newLiveSearchResponse("🟣 ${entry.title}$hd · ${entry.viewers}", mapper.writeValueAsString(entry), TvType.Live, false) {
                 posterUrl = entry.poster
             }
         }
@@ -248,7 +248,7 @@ object StripchatMaleLive {
             .filter { it.username.lowercase().contains(needle) || it.tags.any { tag -> tag.lowercase().contains(needle) } }
             .mapNotNull { model ->
                 val entry = item(model) ?: return@mapNotNull null
-                api.newLiveSearchResponse("🟣 ${entry.title}", mapper.writeValueAsString(entry), TvType.Live) {
+                api.newLiveSearchResponse("🟣 ${entry.title}", mapper.writeValueAsString(entry), TvType.Live, false) {
                     posterUrl = entry.poster
                 }
             }

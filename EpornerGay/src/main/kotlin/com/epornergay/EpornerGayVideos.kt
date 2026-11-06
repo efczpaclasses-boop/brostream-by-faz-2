@@ -5,8 +5,6 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import java.net.HttpURLConnection
-import java.net.URL
 import java.net.URLEncoder
 import java.util.BitSet
 
@@ -15,10 +13,8 @@ import java.util.BitSet
  * `gay=2` (only gay), `lq=0` (low quality excluded), and an `order` value.
  * The catalogue link is the `embed` iframe URL from the response.
  *
- * Removed ids come from `/api/v2/video/removed/`. The documented txt form is
- * about 150MB, so it is streamed once into a compact filter and not kept as
- * text. Until that filter is ready, a page is shown unfiltered rather than
- * blocking the row on the download.
+ * The removed-id dump is about 150MB and is not downloaded: doing that from
+ * the homepage cancelled every row on Google TV. Pages are shown unfiltered.
  */
 object EpornerGayVideos {
 
@@ -58,7 +54,7 @@ object EpornerGayVideos {
             OfficialRow("EP|$order|all", "Eporner · $label", core = true, defaultOn = true)
         }.toMutableList()
         CATEGORIES.forEach { query ->
-            rows += OfficialRow("EP|top-weekly|$query", "Eporner · $query", core = false, defaultOn = true)
+            rows += OfficialRow("EP|top-weekly|$query", "Eporner · $query", core = false, defaultOn = false)
         }
         return rows
     }
@@ -73,11 +69,19 @@ object EpornerGayVideos {
         return order to query
     }
 
+    internal fun searchQuery(query: String): String = if (query == "all") "gay" else query
+
+    /** Drops titles that are not gay-male. `gay=2` still includes trans results. */
+    internal fun gayMaleTitle(title: String): Boolean {
+        if (title.isBlank()) return false
+        return !NON_MALE_TITLE.containsMatchIn(title)
+    }
+
     internal fun apiUrl(page: Int, order: String, query: String): String =
         SEARCH + "?gay=2&lq=0&format=json&thumbsize=medium&per_page=$PAGE_SIZE" +
             "&page=${page.coerceAtLeast(1)}" +
             "&order=${URLEncoder.encode(order, "UTF-8")}" +
-            "&query=${URLEncoder.encode(query, "UTF-8")}"
+            "&query=${URLEncoder.encode(searchQuery(query), "UTF-8")}"
 
     internal fun parseSearch(body: String): EpornerSearchResponse =
         runCatching { mapper.readValue<EpornerSearchResponse>(body) }.getOrDefault(EpornerSearchResponse())
@@ -122,15 +126,15 @@ object EpornerGayVideos {
             ?: return emptyList<Item>() to false
         val parsed = parseSearch(body)
         val kept = EpornerRemovedFeed.apply(parsed.videos)
-        val items = kept.mapNotNull(::item)
-        return items to (page < parsed.totalPages && parsed.videos.isNotEmpty())
+        val items = kept.mapNotNull(::item).filter { gayMaleTitle(it.title) }
+        return items to (page < parsed.totalPages && items.isNotEmpty())
     }
 
     suspend fun homePage(api: MainAPI, page: Int, rowName: String, rowKey: String): HomePageResponse {
         val (order, query) = parts(rowKey)
         val (items, more) = fetch(page, order, query)
         val cards = items.map { entry ->
-            api.newMovieSearchResponse(entry.title, mapper.writeValueAsString(entry), TvType.NSFW) {
+            api.newMovieSearchResponse(entry.title, mapper.writeValueAsString(entry), TvType.NSFW, false) {
                 posterUrl = entry.poster
             }
         }
@@ -141,7 +145,7 @@ object EpornerGayVideos {
         if (query.isBlank()) return emptyList()
         val (items, _) = fetch(1, "most-popular", query.trim())
         return items.map { entry ->
-            api.newMovieSearchResponse(entry.title, mapper.writeValueAsString(entry), TvType.NSFW) { posterUrl = entry.poster }
+            api.newMovieSearchResponse(entry.title, mapper.writeValueAsString(entry), TvType.NSFW, false) { posterUrl = entry.poster }
         }
     }
 
@@ -161,6 +165,11 @@ object EpornerGayVideos {
      */
     @Suppress("UNUSED_PARAMETER")
     suspend fun loadLinks(data: String, callback: (ExtractorLink) -> Unit): Boolean = false
+
+    private val NON_MALE_TITLE = Regex(
+        "\\b(lesbian|shemale|trans|tranny|ladyboy|futa|tgirl|t-girl)\\b",
+        RegexOption.IGNORE_CASE,
+    )
 }
 
 /** Compact membership test for the large removed-id feed. */
@@ -185,55 +194,13 @@ internal class RemovedIdBloom(bits: Int = 1 shl 27, private val hashCount: Int =
     }
 }
 
+/**
+ * The documented removed-id dump is about 150MB. Starting it from the homepage
+ * starved Google TV and got CloudStream's single homepage timeout to cancel
+ * every row. Catalogue rows are shown without that filter.
+ */
 internal object EpornerRemovedFeed {
-    private val lock = Any()
-    @Volatile private var bloom: RemovedIdBloom? = null
-    @Volatile private var started = false
-    @Volatile private var retryAt = 0L
-
-    fun apply(videos: List<EpornerVideo>): List<EpornerVideo> {
-        start()
-        val ready = bloom ?: return videos
-        return EpornerGayVideos.withoutRemoved(videos, ready)
-    }
-
-    private fun start() {
-        if (bloom != null || started || System.currentTimeMillis() < retryAt) return
-        synchronized(lock) {
-            if (bloom != null || started || System.currentTimeMillis() < retryAt) return
-            started = true
-            Thread {
-                try {
-                    bloom = download()
-                } catch (_: Throwable) {
-                    started = false
-                    retryAt = System.currentTimeMillis() + 15 * 60 * 1000
-                }
-            }.apply { name = "eporner-removed"; isDaemon = true }.start()
-        }
-    }
-
-    private fun download(): RemovedIdBloom {
-        val connection = URL(REMOVED_URL).openConnection() as HttpURLConnection
-        connection.connectTimeout = 20_000
-        connection.readTimeout = 30_000
-        connection.setRequestProperty("User-Agent", "BroStream/8")
-        try {
-            return connection.inputStream.bufferedReader().use { reader ->
-                val built = RemovedIdBloom()
-                while (true) {
-                    val line = reader.readLine() ?: break
-                    val id = line.trim()
-                    if (id.isNotEmpty()) built.add(id)
-                }
-                built
-            }
-        } finally {
-            connection.disconnect()
-        }
-    }
-
-    private const val REMOVED_URL = "https://www.eporner.com/api/v2/video/removed/?format=txt"
+    fun apply(videos: List<EpornerVideo>): List<EpornerVideo> = videos
 }
 
 internal fun epornerRate(node: JsonNode?): Double = when {

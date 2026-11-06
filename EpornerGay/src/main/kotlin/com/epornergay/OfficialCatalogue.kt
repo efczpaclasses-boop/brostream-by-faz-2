@@ -10,9 +10,11 @@ import com.lagradost.cloudstream3.mainPageOf
 import com.lagradost.cloudstream3.utils.ExtractorLink
 
 /**
- * Homepage rows for the official feeds. CloudStream plugins can open a settings
- * screen (`Plugin.openSettings`), so category rows are selectable there. Core
- * rows stay visible. A saved empty selection leaves only those core rows.
+ * Homepage rows for the official feeds. CloudStream loads every [mainPage] row
+ * inside one timeout and cancels the whole provider home if that batch overruns,
+ * which is what left Google TV blank. Core rows are the short default. Optional
+ * categories stay off until the viewer turns them on in extension settings.
+ * A saved empty selection leaves only the core rows.
  */
 object OfficialCatalogue {
 
