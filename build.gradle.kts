@@ -60,9 +60,10 @@ subprojects {
         val implementation by configurations
         cloudstream("com.lagradost:cloudstream3:pre-release")
         implementation(kotlin("stdlib"))
-        implementation("com.github.Blatzar:NiceHttp:0.4.11")
+        // Match CloudStream 4.8.0. Newer Jackson crashes Android TV / Google TV at mapper init.
+        implementation("com.github.Blatzar:NiceHttp:0.4.18")
         implementation("org.jsoup:jsoup:1.18.3")
-        implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.16.0")
+        implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.13.1")
         add("testImplementation", "junit:junit:4.13.2")
     }
 }

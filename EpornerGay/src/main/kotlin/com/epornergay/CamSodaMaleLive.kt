@@ -76,12 +76,10 @@ object CamSodaMaleLive {
     fun configured(id: String = AFFILIATE_ID): Boolean = id.isNotBlank()
 
     fun rows(id: String = AFFILIATE_ID): List<OfficialRow> {
-        if (!configured(id)) {
-            return listOf(OfficialRow(NOTE_ROW, "CamSoda (affiliate id required)", core = true, defaultOn = true))
-        }
+        if (!configured(id)) return emptyList()
         val rows = mutableListOf(OfficialRow("CS|male", "🟠 CamSoda men", core = true, defaultOn = true))
         TAGS.forEach { tag ->
-            rows += OfficialRow("CS|tag|$tag", "🟠 CamSoda · #$tag", core = false, defaultOn = true)
+            rows += OfficialRow("CS|tag|$tag", "🟠 CamSoda · #$tag", core = false, defaultOn = false)
         }
         return rows
     }
@@ -141,7 +139,7 @@ object CamSodaMaleLive {
                 pageUrl = API,
                 note = "CAMSODA_AFFILIATE_ID in CamSodaMaleLive.kt is empty. Set it to your CamSoda affiliate id to show the official male online_embed feed. That feed is live rooms only; it does not document a video-on-demand catalogue.",
             )
-            val card = api.newMovieSearchResponse(note.title, mapper.writeValueAsString(note), TvType.NSFW) {}
+            val card = api.newMovieSearchResponse(note.title, mapper.writeValueAsString(note), TvType.NSFW, false) {}
             return newHomePageResponse(HomePageList(rowName, listOf(card), false), hasNext = false)
         }
         val tag = tagFor(rowKey)
@@ -151,7 +149,7 @@ object CamSodaMaleLive {
         val items = rooms.map { model ->
             val entry = item(model)
             val hd = if (entry.hd) " HD" else ""
-            api.newLiveSearchResponse("🟠 ${entry.title}$hd · ${entry.viewers}", mapper.writeValueAsString(entry), TvType.Live) {
+            api.newLiveSearchResponse("🟠 ${entry.title}$hd · ${entry.viewers}", mapper.writeValueAsString(entry), TvType.Live, false) {
                 posterUrl = entry.poster
             }
         }
@@ -166,7 +164,7 @@ object CamSodaMaleLive {
             listOf(model.username, model.name, model.subject, model.tags.joinToString(" ")).any { it?.lowercase()?.contains(needle) == true }
         }.map { model ->
             val entry = item(model)
-            api.newLiveSearchResponse("🟠 ${entry.title}", mapper.writeValueAsString(entry), TvType.Live) { posterUrl = entry.poster }
+            api.newLiveSearchResponse("🟠 ${entry.title}", mapper.writeValueAsString(entry), TvType.Live, false) { posterUrl = entry.poster }
         }
     }
 

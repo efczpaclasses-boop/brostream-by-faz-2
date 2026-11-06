@@ -97,10 +97,10 @@ object ChaturbateMaleLive {
             OfficialRow("CB|hd", "🔴 Chaturbate HD men", core = true, defaultOn = true),
         )
         REGIONS.forEach { (id, label) ->
-            rows += OfficialRow("CB|region|$id", "🔴 Chaturbate · $label", core = false, defaultOn = true)
+            rows += OfficialRow("CB|region|$id", "🔴 Chaturbate · $label", core = false, defaultOn = false)
         }
         TAGS.forEach { tag ->
-            rows += OfficialRow("CB|tag|$tag", "🔴 Chaturbate · #$tag", core = false, defaultOn = true)
+            rows += OfficialRow("CB|tag|$tag", "🔴 Chaturbate · #$tag", core = false, defaultOn = false)
         }
         return rows
     }
@@ -191,7 +191,7 @@ object ChaturbateMaleLive {
             )
             val viewers = item.viewers?.let { " · $it" }.orEmpty()
             val hd = if (item.hd) " HD" else ""
-            api.newLiveSearchResponse("🔴 ${item.title}$hd$viewers", mapper.writeValueAsString(item), TvType.Live) {
+            api.newLiveSearchResponse("🔴 ${item.title}$hd$viewers", mapper.writeValueAsString(item), TvType.Live, false) {
                 posterUrl = item.poster
             }
         }
@@ -217,7 +217,7 @@ object ChaturbateMaleLive {
                 subject = room.roomSubject,
                 hd = room.isHd == true,
             )
-            api.newLiveSearchResponse("🔴 ${item.title}", mapper.writeValueAsString(item), TvType.Live) {
+            api.newLiveSearchResponse("🔴 ${item.title}", mapper.writeValueAsString(item), TvType.Live, false) {
                 posterUrl = item.poster
             }
         }

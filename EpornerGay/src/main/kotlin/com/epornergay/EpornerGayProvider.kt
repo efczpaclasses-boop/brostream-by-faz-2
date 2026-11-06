@@ -6,6 +6,7 @@ import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.utils.*
 import java.net.URI
 import java.net.URLEncoder
+import kotlin.coroutines.cancellation.CancellationException
 
 class EpornerGayProvider(
     private val savedOfficialRows: () -> Set<String>? = { null },
@@ -39,43 +40,8 @@ class EpornerGayProvider(
         val poster: String? = null,
     )
 
-    private val scrapedMainPage = mainPageOf(
-        "MP|/" to "🔥 Fresh Gay Men",
-        "GV|/" to "🆕 New Gay Videos",
-        "GV|/categories/amateur/" to "🏠 Top Amateur Men",
-        "MP|/search/?q=amateur+gay+blowjob" to "👄 Amateur Blowjobs",
-        "GPT|/search/videos/straight-guy-blowjob/page1.html" to "🔥 Straight Guys Getting Serviced",
-        "GV|/search/straight-friends-gay/" to "🤝 Straight Friends Playing Around",
-        "MP|/search/?q=gay+first+time" to "🫣 First-Time Encounters",
-        "GV|/search/gay-onlyfans/" to "📱 OnlyFans & Creator Men",
-        "CURATED" to "⭐ MyVidster Gay Picks — 3 Profiles",
-        "GV|/categories/homemade/" to "🎥 Homemade & Non-Studio",
-        "MP|/categories/latino/" to "🌶️ Latino Men",
-        "GV|/categories/brazilian/" to "🇧🇷 Brazilian Men",
-        "MP|/categories/blowjob/" to "👄 Hottest Blowjobs",
-        "GV|/categories/compilation/" to "💦 Gay Compilations",
-        "MP|/categories/compilation/" to "💦 Cum & Blowjob Compilations",
-        "GV|/categories/party/" to "🎉 Party & Group Play",
-        "GPT|/search/videos/pnp-slam/page1.html" to "🔥 PNP & Slam",
-        "MP|/categories/muscle/" to "💪 Muscle Men",
-        "GV|/search/gay-jock/" to "🔥 Jocks",
-        "GV|/search/straight-curious-guys/" to "Straight & Curious Guys",
-        "GV|/categories/big-cock/" to "Big Dick",
-        "MP|/categories/bareback/" to "Bareback",
-        "GV|/categories/group-sex/" to "Group & Orgies",
-        "MP|/categories/solo/" to "Solo Men",
-        "GV|/categories/outdoor/" to "Outdoor & Public",
-        "MP|/categories/cumshot/" to "Cumshots",
-        "GV|/categories/gloryhole/" to "Gloryholes",
-        "MP|/categories/handjob/" to "Handjobs",
-        "GV|/categories/interracial/" to "Interracial Men",
-        "MP|/categories/asian/" to "Asian Men",
-        "GV|/categories/first-time/" to "First Time",
-        "MP|/categories/webcam/" to "Webcam & Creator-Made",
-    )
-
     override val mainPage: List<com.lagradost.cloudstream3.MainPageData>
-        get() = OfficialCatalogue.mainPage(savedOfficialRows()) + scrapedMainPage
+        get() = OfficialCatalogue.mainPage(savedOfficialRows())
 
     private val queries = mapOf(
         "MP|/" to "gay men", "GV|/" to "new gay men", "GV|/categories/amateur/" to "amateur men",
@@ -99,6 +65,18 @@ class EpornerGayProvider(
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
+        return try {
+            loadMainPage(page, request)
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: Throwable) {
+            // One row must not fail the provider. CloudStream awaits every row in
+            // a single call and drops the whole home when any row throws.
+            newHomePageResponse(HomePageList(request.name, emptyList()), hasNext = false)
+        }
+    }
+
+    private suspend fun loadMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         require(page >= 1) { "Page numbers start at 1" }
         OfficialCatalogue.home(this, page, request)?.let { return it }
         val primary = when {
@@ -279,7 +257,7 @@ class EpornerGayProvider(
 
     private fun itemKeys(item: ItemData): List<String> = catalogueKeys(item.url, item.title)
 
-    private fun ItemData.response(): SearchResponse = newMovieSearchResponse("[$sourceLabel] $title", mapper.writeValueAsString(this), TvType.NSFW) {
+    private fun ItemData.response(): SearchResponse = newMovieSearchResponse("[$sourceLabel] $title", mapper.writeValueAsString(this), TvType.NSFW, false) {
         posterUrl = poster
     }
 
